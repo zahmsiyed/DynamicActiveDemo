@@ -1,14 +1,36 @@
-# DynamicActiveDemo
-=======
 # Teacher Evaluation & Classroom Observation App
 
-This project is a step-by-step build of a full-stack web application for managing teacher evaluations, classroom observations, instructional feedback, and AI-powered classroom transcription insights.
+This project is a step-by-step build of a full-stack web application for teacher evaluations, classroom observations, instructional feedback, and AI-powered classroom transcription insights.
 
-The goal is to build the assignment in small phases so each part is understandable before moving to the next layer.
+The build is intentionally phased so each layer is understandable before the next one is added.
+
+## Current Status
+
+Phase 1 is in progress/completed: project foundation.
+
+What exists now:
+
+- Next.js App Router project
+- TypeScript
+- Tailwind CSS
+- ESLint
+- A commented starter home page
+- A documented build path
+
+What does not exist yet:
+
+- Database
+- Authentication
+- Dashboards
+- Observation forms
+- Audio upload
+- AI transcription
+
+Those come in later phases.
 
 ## Assignment Summary
 
-The application should support three main user roles:
+The finished application should support three user roles:
 
 - District admins: view district-wide schools, teachers, evaluations, analytics, and goals.
 - School admins: conduct observations, upload recordings, score evaluations, write feedback, and review AI insights.
@@ -33,7 +55,57 @@ The most important feature is the AI classroom recording workflow:
 - AI: OpenAI transcription and structured insight generation, with fallback demo data
 - Reports: Exportable PDF reports
 
-## Build Path
+## Run The App
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the local development server:
+
+```bash
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+## Phase 1: Project Foundation
+
+Purpose: create the base app and make sure the local development loop works.
+
+Built in this phase:
+
+- Next.js + TypeScript app
+- Tailwind styling
+- Basic `src/app` folder structure
+- README with assignment goal
+- Home page that introduces the product direction
+- Local dev server
+
+Important files:
+
+- `src/app/page.tsx`: the first visible page in the app.
+- `src/app/layout.tsx`: the root wrapper shared by every page.
+- `src/app/globals.css`: global Tailwind and CSS variable setup.
+- `next.config.ts`: Next.js project configuration.
+- `postcss.config.mjs`: Tailwind CSS processing configuration.
+- `eslint.config.mjs`: linting configuration.
+
+What to understand before moving on:
+
+- `src/app/page.tsx` maps to `/`.
+- `src/app/layout.tsx` wraps all routes.
+- `src/app/globals.css` applies styles across the whole app.
+- `npm run dev` starts the local app.
+- The browser auto-refreshes as code changes.
+
+## Full Build Path
 
 ### Phase 1: Project Foundation
 
@@ -292,7 +364,3 @@ The app should work even without an OpenAI API key.
 - If `OPENAI_API_KEY` is missing, the app uses seeded transcript and insight data.
 
 This makes local demos reliable while still allowing a real AI workflow when credentials are available.
-
-## Future Deployment Notes
-
-The first version prioritizes a local, understandable prototype. Later, SQLite can be replaced with Postgres through Prisma, and the app can be deployed to a platform like Vercel with hosted database storage.
