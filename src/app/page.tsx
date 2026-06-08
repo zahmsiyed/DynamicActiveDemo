@@ -3,6 +3,8 @@
 // In the Next.js App Router, every folder can become a route segment,
 // and the `page.tsx` file is the visible UI for that route.
 
+import Link from "next/link";
+
 // These arrays keep the Phase 1 page data near the UI while the project
 // is still small. Later phases can move data into a database.
 const roleSummaries = [
@@ -40,16 +42,26 @@ export default function Home() {
         <header className="flex items-center justify-between border-b border-white/10 pb-5">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.2em] text-cyan-300">
-              Phase 1 Foundation
+              Phase 4 Dashboards
             </p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight">
               Teacher Evaluation Studio
             </h1>
           </div>
 
-          {/* This status badge is static for now; later phases can make it dynamic. */}
-          <div className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-sm text-cyan-100">
-            Local prototype
+          <div className="flex items-center gap-3">
+            {/* This link takes users into the seeded authentication flow. */}
+            <Link
+              className="rounded-md bg-cyan-300 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
+              href="/login"
+            >
+              Sign in
+            </Link>
+
+            {/* This status badge is static for now; later phases can make it dynamic. */}
+            <div className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-sm text-cyan-100">
+              Local prototype
+            </div>
           </div>
         </header>
 
@@ -64,8 +76,9 @@ export default function Home() {
             </h2>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
               This foundation gives us the first route, global styling, and a
-              product direction before we add data, authentication, dashboards,
-              observations, transcription, and AI insights.
+              product direction. The database, seeded authentication layer, and
+              role-specific dashboards are now in place before we add
+              observation forms, transcription, and AI insights.
             </p>
           </div>
 

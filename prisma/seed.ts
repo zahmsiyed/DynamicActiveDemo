@@ -331,7 +331,7 @@ async function main() {
     },
   });
 
-  // Console output confirms that the seed ran and shows credentials for the auth phase.
+  // Console output confirms that the seed ran and shows credentials for Phase 3.
   console.log("Seed complete");
   console.table([
     { role: "District Admin", email: "district@example.com", password: demoPassword },
