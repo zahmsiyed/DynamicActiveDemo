@@ -2,6 +2,8 @@
 // These are intentionally simple server components: they receive prepared data
 // and render it without fetching or mutating anything.
 
+import Link from "next/link";
+
 import {
   statusLabels,
   statusStyles,
@@ -79,13 +81,19 @@ export function ObservationTable({
                 <th className="px-4 py-3 font-medium">Score</th>
                 <th className="px-4 py-3 font-medium">Signals</th>
                 <th className="px-4 py-3 font-medium">Updated</th>
+                <th className="px-4 py-3 font-medium">Report</th>
               </tr>
             </thead>
             <tbody>
               {observations.map((observation) => (
                 <tr key={observation.id} className="border-b border-white/5">
                   <td className="px-4 py-4">
-                    <p className="font-medium text-white">{observation.title}</p>
+                    <Link
+                      className="font-medium text-white transition hover:text-cyan-200"
+                      href={`/observations/${observation.id}`}
+                    >
+                      {observation.title}
+                    </Link>
                     <p className="mt-1 text-xs text-slate-400">
                       {observation.subject} | Grade {observation.gradeLevel} |
                       Scheduled {observation.scheduledDate}
@@ -114,6 +122,14 @@ export function ObservationTable({
                   </td>
                   <td className="px-4 py-4 text-slate-400">
                     {observation.updatedDate}
+                  </td>
+                  <td className="px-4 py-4">
+                    <Link
+                      className="rounded-md border border-cyan-300/30 bg-cyan-300/10 px-3 py-2 text-xs font-medium text-cyan-100 transition hover:bg-cyan-300/20"
+                      href={`/observations/${observation.id}`}
+                    >
+                      Open
+                    </Link>
                   </td>
                 </tr>
               ))}

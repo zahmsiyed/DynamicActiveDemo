@@ -1,5 +1,6 @@
-// This small script verifies that Phase 2 worked.
-// It queries the seeded database and prints counts plus one observation summary.
+// This small script verifies that the local database is usable.
+// It prints counts and one observation summary so each phase can confirm its
+// data exists before building UI on top of it.
 
 import { PrismaClient } from "@prisma/client";
 
@@ -7,13 +8,23 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  // Count the core records that Phase 2 is responsible for creating.
-  const [districts, schools, users, observations, transcriptSegments, insights] =
-    await Promise.all([
+  // Count the core records that the prototype depends on.
+  const [
+    districts,
+    schools,
+    users,
+    observations,
+    audioUploads,
+    transcriptions,
+    transcriptSegments,
+    insights,
+  ] = await Promise.all([
       prisma.district.count(),
       prisma.school.count(),
       prisma.user.count(),
       prisma.observation.count(),
+      prisma.audioUpload.count(),
+      prisma.transcription.count(),
       prisma.transcriptSegment.count(),
       prisma.insight.count(),
     ]);
@@ -25,6 +36,7 @@ async function main() {
       observer: true,
       school: true,
       scores: true,
+      audioUpload: true,
       transcription: {
         include: {
           segments: true,
@@ -43,6 +55,8 @@ async function main() {
     schools,
     users,
     observations,
+    audioUploads,
+    transcriptions,
     transcriptSegments,
     insights,
   });
@@ -56,6 +70,12 @@ async function main() {
     console.log(`- Scores: ${sampleObservation.scores.length}`);
     console.log(
       `- Transcript segments: ${sampleObservation.transcription?.segments.length ?? 0}`
+    );
+    console.log(
+      `- Transcript provider: ${sampleObservation.transcription?.provider ?? "none"}`
+    );
+    console.log(
+      `- Audio upload: ${sampleObservation.audioUpload?.fileName ?? "none"}`
     );
     console.log(`- Has AI insight: ${sampleObservation.insight ? "yes" : "no"}`);
   }

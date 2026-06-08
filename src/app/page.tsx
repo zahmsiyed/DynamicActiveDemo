@@ -5,8 +5,8 @@
 
 import Link from "next/link";
 
-// These arrays keep the Phase 1 page data near the UI while the project
-// is still small. Later phases can move data into a database.
+// These arrays keep static homepage copy near the UI while the page is simple.
+// Dashboard and observation data now live in SQLite through Prisma.
 const roleSummaries = [
   {
     title: "District Admin",
@@ -23,7 +23,7 @@ const roleSummaries = [
 ];
 
 // This list mirrors the core AI workflow from the assignment.
-// For Phase 1, it is only displayed as product direction.
+// The real AI pieces are still future phases, so these remain product direction.
 const workflowSteps = [
   "Record or upload classroom audio",
   "Transcribe the lesson",
@@ -38,11 +38,11 @@ export default function Home() {
     <main className="min-h-screen bg-slate-950 text-slate-50">
       {/* This constrained container keeps the interface readable on wide screens. */}
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8 sm:px-8 lg:px-10">
-        {/* The top bar introduces the project name without adding routing yet. */}
+        {/* The top bar introduces the project name and links into authentication. */}
         <header className="flex items-center justify-between border-b border-white/10 pb-5">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.2em] text-cyan-300">
-              Phase 4 Dashboards
+              Phase 7 Audio Upload
             </p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight">
               Teacher Evaluation Studio
@@ -58,7 +58,7 @@ export default function Home() {
               Sign in
             </Link>
 
-            {/* This status badge is static for now; later phases can make it dynamic. */}
+            {/* This status badge is static because deployment is not part of this phase. */}
             <div className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-sm text-cyan-100">
               Local prototype
             </div>
@@ -77,12 +77,14 @@ export default function Home() {
             <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
               This foundation gives us the first route, global styling, and a
               product direction. The database, seeded authentication layer, and
-              role-specific dashboards are now in place before we add
-              observation forms, transcription, and AI insights.
+              role-specific dashboards are now in place. School admins can
+              create scored observations, upload a classroom recording, and see
+              timestamped fallback transcripts before we add real AI
+              transcription.
             </p>
           </div>
 
-          {/* This visual panel previews the classroom-audio analysis focus. */}
+          {/* This visual panel previews the later classroom-audio analysis focus. */}
           <div className="rounded-lg border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-cyan-950/30">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div>
@@ -94,7 +96,7 @@ export default function Home() {
               </span>
             </div>
 
-            {/* The waveform is a simple CSS-only visual so Phase 1 has no asset dependencies. */}
+            {/* The waveform is a simple CSS-only visual, so no image assets are required. */}
             <div className="mt-6 flex h-28 items-end gap-2">
               {[42, 68, 34, 88, 56, 74, 45, 96, 64, 52, 78, 40].map(
                 (height, index) => (
@@ -126,7 +128,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Role cards help us keep the product requirements visible during Phase 1. */}
+        {/* Role cards keep the product requirements visible while we build each phase. */}
         <section className="grid gap-4 border-t border-white/10 py-8 md:grid-cols-3">
           {roleSummaries.map((role) => (
             <article

@@ -27,7 +27,7 @@ The most important feature is the AI classroom recording workflow:
 
 ## Current Status
 
-Phase 1, Phase 2, Phase 3, and Phase 4 are implemented.
+Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, and Phase 7 are implemented.
 
 Phase 1 added:
 
@@ -63,7 +63,38 @@ Phase 4 added:
 - Shared dashboard shell and reusable dashboard widgets
 - Server-side dashboard query helpers
 
-Observation creation forms, upload UI, report detail pages, and real AI API calls do not exist yet. Those come later.
+Phase 5 added:
+
+- School admin observation creation form
+- Role-scoped observation list API
+- Role-scoped single-observation read API
+- School-admin observation update API for Phase 5 fields
+- Rubric score validation and storage
+- Written feedback storage
+- Teacher-facing observation report page
+- Dashboard links into report pages
+
+Phase 6 added:
+
+- Timestamped transcript viewer on observation reports
+- Speaker labels for teacher, student, group, and unknown speaker turns
+- Transcript duration, segment count, speaker count, and provider metadata
+- Role-scoped transcript read API
+- School-admin demo fallback transcript creation API
+- Demo fallback transcript button for reports without a transcript
+- Database verification output for transcription records
+
+Phase 7 added:
+
+- School-admin classroom recording upload form on observation reports
+- Local file validation for MP3, WAV, MP4, M4A, and WebM
+- 25 MB prototype upload limit
+- Local ignored `.uploads/` storage for recording files
+- `AudioUpload` metadata create/update behavior
+- Automatic fallback transcript creation after upload
+- Database verification output for audio upload records
+
+Realtime transcription, file transcription with OpenAI, generated AI insights, PDF export, and notifications do not exist yet. Those come later.
 
 ## Phase 2 Files
 
@@ -175,6 +206,96 @@ School admin dashboard. It shows operational queues and school-level observation
 
 Teacher dashboard. It shows the teacher's observation history, feedback, and AI insight summary.
 
+## Phase 5 Files
+
+`src/lib/evaluation.ts`
+
+Shared rubric labels, category descriptions, category ordering, and average-score calculation.
+
+`src/lib/observation-input.ts`
+
+Shared API validation helpers. This file turns unknown JSON request data into safe observation fields and rubric score rows.
+
+`src/lib/observations.ts`
+
+Shared observation query and authorization helpers. This keeps report access rules in one place.
+
+`src/app/api/observations/route.ts`
+
+Observation collection API. `GET` returns observations scoped to the signed-in role, and `POST` creates a new observation for a teacher in the school admin's school.
+
+`src/app/api/observations/[id]/route.ts`
+
+Single-observation API. `GET` returns one allowed report, and `PATCH` updates Phase 5 editable fields for school admins.
+
+`src/app/observations/new/page.tsx`
+
+Protected school-admin page for creating a teacher observation.
+
+`src/app/observations/new/observation-form.tsx`
+
+Client-side form for teacher selection, observation details, scoring, summary, and feedback.
+
+`src/app/observations/[id]/page.tsx`
+
+Shared report page. District admins, school admins, and teachers can open only the reports they are allowed to see.
+
+`src/components/dashboard-widgets.tsx`
+
+The observation table now links each row to its report page.
+
+## Phase 6 Files
+
+`src/lib/transcripts.ts`
+
+Shared transcript helpers. This file formats timestamps, labels speaker types, reads role-scoped transcripts, and creates demo fallback transcript rows.
+
+`src/app/api/observations/[id]/transcript/route.ts`
+
+Transcript API. `GET` reads one allowed observation transcript, and `POST` creates a demo fallback transcript for school admins.
+
+`src/components/transcript-viewer.tsx`
+
+Server-rendered transcript viewer for report pages. It shows transcript metrics and timestamped speaker turns.
+
+`src/components/transcript-fallback-button.tsx`
+
+Client-side button that asks the transcript API to create fallback transcript data, then refreshes the report.
+
+`src/app/observations/[id]/page.tsx`
+
+The report page now renders the transcript viewer below the workflow readiness section.
+
+`scripts/check-db.ts`
+
+The database check now reports both transcription records and transcript segment records.
+
+## Phase 7 Files
+
+`src/lib/audio-uploads.ts`
+
+Shared audio upload helpers. This file validates recording type and size, formats file sizes, stores recordings in `.uploads/`, and removes replaced local files.
+
+`src/app/api/observations/[id]/audio/route.ts`
+
+Audio upload API. `POST` accepts one school-admin recording upload, validates scope and file type, stores metadata in `AudioUpload`, and creates a fallback transcript.
+
+`src/components/audio-upload-form.tsx`
+
+Client-side recording upload form used on the report page.
+
+`src/app/observations/[id]/page.tsx`
+
+The report page now shows recording metadata and the upload form for school admins.
+
+`.gitignore`
+
+Ignores the local `.uploads/` directory so classroom recording files are not committed.
+
+`scripts/check-db.ts`
+
+The database check now reports audio upload records and sample upload metadata.
+
 ## Database Commands
 
 Create the SQLite database, generate Prisma Client, and seed demo data:
@@ -202,6 +323,14 @@ prisma/dev.db
 ```
 
 That database file is ignored by Git because it is generated local state.
+
+Uploaded classroom recordings are saved locally at:
+
+```text
+.uploads/observations/<observation-id>/
+```
+
+That upload directory is ignored by Git because recordings are generated local files.
 
 ## Authentication Flow
 
@@ -245,6 +374,15 @@ Auth routes:
 - `GET /dashboard/district`: district admin dashboard
 - `GET /dashboard/school`: school admin dashboard
 - `GET /dashboard/teacher`: teacher dashboard
+- `GET /observations/new`: create observation page for school admins
+- `GET /observations/:id`: role-scoped observation report page
+- `GET /api/observations`: role-scoped observation list API
+- `POST /api/observations`: create observation API
+- `GET /api/observations/:id`: role-scoped observation read API
+- `PATCH /api/observations/:id`: school-admin update API
+- `POST /api/observations/:id/audio`: school-admin recording upload API
+- `GET /api/observations/:id/transcript`: role-scoped transcript read API
+- `POST /api/observations/:id/transcript`: school-admin fallback transcript API
 
 ## Dashboard Data Flow
 
@@ -269,6 +407,79 @@ Dashboard responsibilities:
 - Teacher dashboard: personal feedback and growth tracking.
 
 Phase 4 does not create or edit observations. It only displays the seeded Phase 2 data through the protected Phase 3 auth system.
+
+## Observation Workflow
+
+The Phase 5 observation flow is:
+
+```text
+School admin dashboard
+-> Create observation
+-> choose teacher in the same school
+-> enter title, subject, grade, and date
+-> score every rubric category from 1 to 5
+-> optionally write summary and feedback
+-> POST /api/observations
+-> Prisma creates Observation, EvaluationScore rows, and Feedback
+-> redirect to /observations/:id
+-> report page checks role scope before rendering
+```
+
+Phase 5 authorization rules:
+
+- District admins can read observations in their district.
+- School admins can create and update observations only for their school.
+- Teachers can read observations attached to their own user account.
+
+Phase 5 intentionally does not handle audio, transcription, AI analysis, PDF export, or notifications. Those are separate phases so each workflow is understandable before adding the next layer.
+
+## Transcript Storage Flow
+
+The Phase 6 transcript flow is:
+
+```text
+Observation report
+-> report loads observation.transcription with ordered TranscriptSegment rows
+-> transcript viewer renders speaker, time range, confidence, and text
+-> if no transcript exists, school admins can create a demo fallback transcript
+-> POST /api/observations/:id/transcript
+-> Prisma creates Transcription and TranscriptSegment rows
+-> observation status moves to TRANSCRIBED unless it was already FINALIZED or ANALYZED
+-> report refreshes and shows the new transcript
+```
+
+Transcript storage responsibilities:
+
+- `Transcription` stores the full transcript text and provider/model metadata.
+- `TranscriptSegment` stores each speaker turn with start time, end time, speaker label, speaker type, confidence, and text.
+- Speaker diarization means separating speech by speaker. In Phase 6 this is simulated with seeded labels; later OpenAI transcription can produce similar segment records from uploaded classroom audio.
+
+Phase 6 still does not upload files or call OpenAI. It proves the transcript data shape and UI before adding real audio processing.
+
+## Audio Upload Flow
+
+The Phase 7 upload flow is:
+
+```text
+Observation report
+-> school admin chooses a recording file
+-> POST /api/observations/:id/audio
+-> route checks the signed-in user and school scope
+-> route validates file type and size
+-> file is stored under .uploads/observations/:id/
+-> AudioUpload metadata is created or replaced
+-> fallback transcript is created if one does not exist
+-> report refreshes with recording metadata and transcript segments
+```
+
+Accepted file types:
+
+- MP3: `audio/mpeg`, `audio/mp3`
+- WAV: `audio/wav`, `audio/x-wav`
+- MP4/M4A: `video/mp4`, `audio/mp4`, `audio/m4a`
+- WebM: `audio/webm`, `video/webm`
+
+Phase 7 stores files locally for the prototype. In production, this would move to object storage such as S3, Vercel Blob, or another durable file store.
 
 ## Phase 2 Data Model
 
@@ -390,12 +601,14 @@ Build:
 - Evaluation category scoring
 - Written feedback
 - Teacher report view
+- Role-scoped observation read/update APIs
 
 Understand:
 
 - How forms submit data
 - How observations move through statuses
-- How teachers see finalized reports
+- How scores and feedback attach to a report
+- How teachers see assigned reports
 
 ### Phase 6: Transcript Storage
 

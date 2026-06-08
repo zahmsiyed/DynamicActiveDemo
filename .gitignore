@@ -38,6 +38,9 @@ yarn-error.log*
 prisma/*.db
 prisma/*.db-journal
 
+# local classroom recordings uploaded during Phase 7
+.uploads/
+
 # vercel
 .vercel
 

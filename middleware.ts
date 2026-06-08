@@ -42,8 +42,11 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  // Any dashboard route requires a valid session.
-  if (pathname.startsWith("/dashboard") && !session) {
+  // Any dashboard or observation route requires a valid session.
+  if (
+    (pathname.startsWith("/dashboard") || pathname.startsWith("/observations")) &&
+    !session
+  ) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
@@ -67,5 +70,5 @@ export async function middleware(request: NextRequest) {
 
 // Limit middleware to auth-related pages so normal static assets are untouched.
 export const config = {
-  matcher: ["/login", "/dashboard/:path*", "/dashboard"],
+  matcher: ["/login", "/dashboard/:path*", "/dashboard", "/observations/:path*"],
 };
