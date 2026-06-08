@@ -1,0 +1,298 @@
+// Phase 2 is the data-model phase.
+// This file describes the database tables, columns, and relationships before
+// we build authentication, dashboards, forms, or AI features.
+
+// The generator creates the TypeScript Prisma Client used by app code and scripts.
+generator client {
+  provider = "prisma-client-js"
+}
+
+// SQLite keeps the first prototype local and easy to inspect.
+// DATABASE_URL is defined in .env and .env.example.
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Role controls what a user will be allowed to see in later phases.
+enum Role {
+  DISTRICT_ADMIN
+  SCHOOL_ADMIN
+  TEACHER
+}
+
+// ObservationStatus lets the app track where an observation is in the workflow.
+enum ObservationStatus {
+  DRAFT
+  SCHEDULED
+  RECORDED
+  TRANSCRIBED
+  ANALYZED
+  FINALIZED
+}
+
+// These categories match the assignment's suggested evaluation rubric.
+enum EvaluationCategory {
+  CLASSROOM_MANAGEMENT
+  STUDENT_ENGAGEMENT
+  LESSON_PACING
+  INSTRUCTIONAL_CLARITY
+  COMMUNICATION
+  ASSESSMENT_METHODS
+}
+
+// SpeakerType makes transcript analysis easier than relying on text labels alone.
+enum SpeakerType {
+  TEACHER
+  STUDENT
+  GROUP
+  UNKNOWN
+}
+
+// InsightIllustration maps AI recommendations to simple UI illustrations later.
+enum InsightIllustration {
+  PATIENCE_CLOCK
+  PARTICIPATION_BALANCE
+  CLARITY_STEPS
+  PACING_GAUGE
+}
+
+/// A district owns schools, users, and observations across the whole system.
+model District {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  // A district has many schools.
+  schools School[]
+
+  // District admins, school admins, and teachers can all belong to a district.
+  users User[]
+
+  // Storing districtId on observations makes district-level reporting simple.
+  observations Observation[]
+}
+
+/// A school belongs to one district and contains admins, teachers, observations.
+model School {
+  id         String   @id @default(cuid())
+  name       String
+  districtId String
+  createdAt  DateTime @default(now())
+
+  // This connects each school back to its district.
+  district District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+
+  // Users can be school admins or teachers in this school.
+  users User[]
+
+  // Observations happen inside one school.
+  observations Observation[]
+}
+
+/// A user can be a district admin, school admin, or teacher.
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  title        String?
+  districtId   String?
+  schoolId     String?
+  createdAt    DateTime @default(now())
+
+  // District is optional so the schema can support future super-admins if needed.
+  district District? @relation(fields: [districtId], references: [id])
+
+  // School is optional because district admins are not tied to one school.
+  school School? @relation(fields: [schoolId], references: [id])
+
+  // Observations where this user is the teacher being observed.
+  observedLessons Observation[] @relation("ObservationTeacher")
+
+  // Observations where this user is the admin/evaluator.
+  conductedObservations Observation[] @relation("ObservationObserver")
+
+  // Feedback this user wrote.
+  authoredFeedback Feedback[] @relation("FeedbackAuthor")
+
+  // Feedback this teacher received.
+  receivedFeedback Feedback[] @relation("FeedbackTeacher")
+
+  // Notifications and email logs are saved for later reporting/demo flows.
+  notifications Notification[]
+  emailLogs     EmailLog[]
+}
+
+/// An observation is the central record tying together teacher, evaluator, scores, transcript, and insights.
+model Observation {
+  id          String            @id @default(cuid())
+  title       String
+  subject     String
+  gradeLevel  String
+  status      ObservationStatus @default(DRAFT)
+  scheduledAt DateTime?
+  observedAt  DateTime?
+  summary     String?
+  teacherId   String
+  observerId  String
+  schoolId    String
+  districtId  String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // The teacher being observed.
+  teacher User @relation("ObservationTeacher", fields: [teacherId], references: [id])
+
+  // The admin conducting the observation.
+  observer User @relation("ObservationObserver", fields: [observerId], references: [id])
+
+  // School and district are stored directly for fast dashboard filtering.
+  school   School   @relation(fields: [schoolId], references: [id])
+  district District @relation(fields: [districtId], references: [id])
+
+  // Supporting records attached to the observation workflow.
+  scores        EvaluationScore[]
+  feedback      Feedback[]
+  audioUpload   AudioUpload?
+  transcription Transcription?
+  insight       Insight?
+  notifications Notification[]
+  emailLogs     EmailLog[]
+}
+
+/// One rubric score for one observation category.
+model EvaluationScore {
+  id            String             @id @default(cuid())
+  observationId String
+  category      EvaluationCategory
+  score         Int
+  note          String?
+
+  // Scores are deleted if their parent observation is deleted.
+  observation Observation @relation(fields: [observationId], references: [id], onDelete: Cascade)
+
+  // Each observation should have only one score per rubric category.
+  @@unique([observationId, category])
+}
+
+/// Written coaching feedback from an admin to a teacher.
+model Feedback {
+  id            String   @id @default(cuid())
+  observationId String
+  authorId      String
+  teacherId     String
+  body          String
+  createdAt     DateTime @default(now())
+
+  // Feedback belongs to an observation.
+  observation Observation @relation(fields: [observationId], references: [id], onDelete: Cascade)
+
+  // The admin who wrote the feedback.
+  author User @relation("FeedbackAuthor", fields: [authorId], references: [id])
+
+  // The teacher who receives the feedback.
+  teacher User @relation("FeedbackTeacher", fields: [teacherId], references: [id])
+}
+
+/// Metadata about an uploaded classroom recording.
+model AudioUpload {
+  id            String   @id @default(cuid())
+  observationId String   @unique
+  fileName      String
+  mimeType      String
+  sizeBytes     Int
+  storagePath   String?
+  createdAt     DateTime @default(now())
+
+  // One observation has at most one current audio upload in this prototype.
+  observation Observation @relation(fields: [observationId], references: [id], onDelete: Cascade)
+}
+
+/// Full transcript text generated from a recording.
+model Transcription {
+  id            String   @id @default(cuid())
+  observationId String   @unique
+  provider      String
+  model         String
+  text          String
+  language      String   @default("en")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // One finalized transcript belongs to one observation.
+  observation Observation @relation(fields: [observationId], references: [id], onDelete: Cascade)
+
+  // Segments store timestamped speaker turns.
+  segments TranscriptSegment[]
+}
+
+/// A timestamped transcript segment, usually one speaker turn.
+model TranscriptSegment {
+  id              String      @id @default(cuid())
+  transcriptionId String
+  speakerLabel    String
+  speakerType     SpeakerType @default(UNKNOWN)
+  text            String
+  startMs         Int
+  endMs           Int
+  confidence      Float?
+
+  // Segments are deleted if their parent transcription is deleted.
+  transcription Transcription @relation(fields: [transcriptionId], references: [id], onDelete: Cascade)
+}
+
+/// Structured AI coaching output generated from a transcript.
+model Insight {
+  id              String              @id @default(cuid())
+  observationId   String              @unique
+  summary         String
+  metricsJson     Json
+  recommendations Json
+  sentimentJson   Json
+  heatmapJson     Json
+  highlightsJson  Json
+  illustrationKey InsightIllustration
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  // One observation has one current AI insight record in this prototype.
+  observation Observation @relation(fields: [observationId], references: [id], onDelete: Cascade)
+}
+
+/// In-app notification for report-ready and insight-ready events.
+model Notification {
+  id            String    @id @default(cuid())
+  userId        String
+  observationId String?
+  type          String
+  title         String
+  body          String
+  readAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  // The user who should see the notification.
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Some notifications point to a specific observation.
+  observation Observation? @relation(fields: [observationId], references: [id], onDelete: Cascade)
+}
+
+/// Simulated email notification log for the prototype.
+model EmailLog {
+  id            String   @id @default(cuid())
+  userId        String
+  observationId String?
+  email         String
+  subject       String
+  body          String
+  status        String   @default("SIMULATED")
+  createdAt     DateTime @default(now())
+
+  // The user who would receive the email.
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Some emails are attached to a specific observation/report.
+  observation Observation? @relation(fields: [observationId], references: [id], onDelete: Cascade)
+}

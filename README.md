@@ -25,6 +25,113 @@ The most important feature is the AI classroom recording workflow:
 - AI: OpenAI transcription and structured insight generation, with fallback demo data
 - Reports: Exportable PDF reports
 
+## Current Status
+
+Phase 1 and Phase 2 are implemented.
+
+Phase 1 added:
+
+- Next.js app foundation
+- TypeScript
+- Tailwind CSS
+- Commented homepage
+- Basic project documentation
+
+Phase 2 added:
+
+- Prisma ORM
+- Local SQLite database
+- Commented database schema
+- Seed script with demo district, schools, users, observations, transcript data, and insights
+- Shared database helper for later server-side app code
+- Database verification script
+
+No login screens, dashboards, forms, upload UI, or AI API calls exist yet. Those come later.
+
+## Phase 2 Files
+
+`prisma/schema.prisma`
+
+The database blueprint. This file defines the tables, fields, enum values, and relationships.
+
+`prisma/seed.ts`
+
+Creates realistic demo data so future phases have something to display.
+
+`src/lib/db.ts`
+
+A small helper that creates a shared Prisma Client for future API routes and server components.
+
+`scripts/check-db.ts`
+
+A learning/debug script that confirms the database has seeded records and connected relationships.
+
+`.env`
+
+Local database configuration. This file is ignored by Git.
+
+`.env.example`
+
+Safe example environment file showing which variables are needed.
+
+## Database Commands
+
+Create the SQLite database, generate Prisma Client, and seed demo data:
+
+```bash
+npm run db:reset
+```
+
+Check that the seed data exists:
+
+```bash
+npm run db:check
+```
+
+Open Prisma Studio to browse the data visually:
+
+```bash
+npm run db:studio
+```
+
+The local SQLite file is created at:
+
+```text
+prisma/dev.db
+```
+
+That database file is ignored by Git because it is generated local state.
+
+## Phase 2 Data Model
+
+The main relationship chain is:
+
+```text
+District -> School -> User
+District -> School -> Observation
+Observation -> EvaluationScore
+Observation -> Feedback
+Observation -> AudioUpload
+Observation -> Transcription -> TranscriptSegment
+Observation -> Insight
+Observation -> Notification
+Observation -> EmailLog
+```
+
+Model meanings:
+
+- `District`: top-level organization.
+- `School`: belongs to one district.
+- `User`: district admin, school admin, or teacher.
+- `Observation`: the central classroom observation record.
+- `EvaluationScore`: rubric category score for one observation.
+- `Feedback`: written coaching feedback from an admin to a teacher.
+- `AudioUpload`: metadata for a classroom recording.
+- `Transcription`: full transcript text for an observation.
+- `TranscriptSegment`: timestamped speaker turn inside a transcript.
+- `Insight`: structured AI coaching output from transcript analysis.
+- `Notification`: in-app notification for future UI.
+- `EmailLog`: simulated email notification for future UI.
 
 ## Full Build Path
 
@@ -56,7 +163,7 @@ Build:
 
 - Prisma setup
 - SQLite database
-- Models for District, School, User, Observation, EvaluationScore, Feedback, Transcription, and Insight
+- Models for District, School, User, Observation, EvaluationScore, Feedback, AudioUpload, Transcription, TranscriptSegment, Insight, Notification, and EmailLog
 - Seed script with demo users and demo observations
 
 Understand:
