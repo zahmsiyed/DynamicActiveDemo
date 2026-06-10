@@ -1,7 +1,6 @@
-// Phase 7 and Phase 8 audio upload API route.
 // School admins upload a classroom recording here. The route validates the
-// file, stores it locally for the prototype, saves metadata, and asks Phase 8
-// to create the final transcript from the stored upload.
+// file, stores it locally for the prototype, saves metadata, and creates the
+// final transcript from the stored upload.
 
 import { Role } from "@prisma/client";
 import { NextResponse } from "next/server";
@@ -34,7 +33,7 @@ export async function POST(
 
   if (user.role !== Role.SCHOOL_ADMIN || !user.schoolId || !user.districtId) {
     return NextResponse.json(
-      { error: "Only school admins can upload recordings in Phase 7." },
+      { error: "Only school admins can upload recordings." },
       { status: 403 }
     );
   }
@@ -103,8 +102,8 @@ export async function POST(
 
   await removeStoredAudioUpload(observation.audioUpload?.storagePath ?? null);
 
-  // Phase 8 tries OpenAI transcription first and falls back to deterministic
-  // demo transcript data when the key or audio processing path is unavailable.
+  // Try OpenAI transcription first and fall back to deterministic transcript
+  // data when the key or audio processing path is unavailable.
   const transcriptResult = await generateTranscriptForObservation(observation.id, user);
 
   if ("error" in transcriptResult && transcriptResult.error) {

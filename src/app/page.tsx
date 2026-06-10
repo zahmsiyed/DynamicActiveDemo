@@ -1,7 +1,4 @@
-// This file defines the `/` route because it is named `page.tsx`
-// inside the `src/app` folder.
-// In the Next.js App Router, every folder can become a route segment,
-// and the `page.tsx` file is the visible UI for that route.
+// Public overview for signed-out visitors; authenticated users redirect below.
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -9,8 +6,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { roleDashboardPath } from "@/lib/session";
 
-// These arrays keep static homepage copy near the UI while the page is simple.
-// Dashboard and observation data now live in SQLite through Prisma.
+// Static overview copy stays here because the public page does not read Prisma.
 const roleSummaries = [
   {
     title: "District Admin",
@@ -26,8 +22,6 @@ const roleSummaries = [
   },
 ];
 
-// This list mirrors the core AI workflow from the assignment.
-// File transcription, structured insights, and polished insight UI now exist.
 const workflowSteps = [
   "Record or upload classroom audio",
   "Transcribe the lesson",
@@ -37,11 +31,10 @@ const workflowSteps = [
 
 const overviewStats = [
   { label: "Seeded roles", value: "3" },
-  { label: "Reports", value: "6" },
-  { label: "AI insights", value: "2" },
+  { label: "Reports", value: "7" },
+  { label: "AI insights", value: "3" },
 ];
 
-// The default export is the React component that Next.js renders for `/`.
 export default async function Home() {
   const user = await getCurrentUser();
 
@@ -51,11 +44,8 @@ export default async function Home() {
   }
 
   return (
-    // The outer wrapper now matches the Dynamic Active-inspired dashboard theme.
     <main className="min-h-screen bg-background text-brand-ink">
-      {/* This constrained container keeps the overview readable on wide screens. */}
       <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-8 sm:px-8 lg:px-10">
-        {/* The top bar gives the overview the same product identity as dashboards. */}
         <header className="flex flex-col gap-4 rounded-[2rem] border border-brand-line bg-brand-card p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-coral">
@@ -67,7 +57,6 @@ export default async function Home() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Signed-out visitors only need one clear path into authentication. */}
             <Link
               className="rounded-full bg-brand-coral px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-coral-dark"
               href="/login"
@@ -77,7 +66,6 @@ export default async function Home() {
           </div>
         </header>
 
-        {/* The overview keeps landing-page confidence without replacing app navigation. */}
         <section className="grid flex-1 items-center gap-10 py-12 lg:grid-cols-[1.04fr_0.96fr]">
           <div>
             <p className="inline-flex rounded-full border border-brand-line bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-brand-coral">
@@ -118,7 +106,6 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* This panel previews the app workflow without copying reference assets. */}
           <div className="rounded-[2rem] border border-brand-line bg-brand-card p-5 shadow-sm">
             <div className="flex items-start justify-between gap-4 border-b border-brand-line pb-4">
               <div>
@@ -170,7 +157,7 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* Role cards keep the product requirements visible while we build each phase. */}
+        {/* Role cards summarize the surfaces available after login. */}
         <section className="grid gap-4 border-t border-brand-line py-8 md:grid-cols-3">
           {roleSummaries.map((role) => (
             <article
@@ -185,7 +172,6 @@ export default async function Home() {
           ))}
         </section>
 
-        {/* The workflow strip shows the main AI feature path in a compact form. */}
         <section className="border-t border-brand-line pt-8">
           <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-coral">
             AI workflow

@@ -1,4 +1,3 @@
-// Phase 5 observation input helpers.
 // API routes receive unknown JSON, so these small helpers validate and coerce
 // request data before Prisma writes anything to the database.
 
@@ -26,7 +25,7 @@ export type ValidScoreInput = {
   note: string;
 };
 
-// Phase 5 lets admins schedule observations or finalize completed reports.
+// School admins can schedule observations or finalize completed reports.
 export const editableObservationStatuses = new Set<ObservationStatus>([
   ObservationStatus.SCHEDULED,
   ObservationStatus.FINALIZED,
@@ -87,6 +86,14 @@ export function parseScoreInputs(value: unknown) {
     }
 
     const category = rawCategory as EvaluationCategory;
+
+    if (seen.has(category)) {
+      return {
+        error: "Submit each rubric category only once.",
+        scores: [],
+      };
+    }
+
     seen.add(category);
     scores.push({
       category,

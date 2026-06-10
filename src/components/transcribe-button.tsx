@@ -1,6 +1,5 @@
 "use client";
 
-// Phase 8 final transcription button.
 // The report page is server-rendered, while this client component owns the
 // click, loading state, API error, and brief source message after transcription.
 

@@ -1,4 +1,3 @@
-// Phase 4 teacher dashboard.
 // This server component is protected by role and then loads teacher-only data.
 
 import { DashboardShell } from "@/components/dashboard-shell";

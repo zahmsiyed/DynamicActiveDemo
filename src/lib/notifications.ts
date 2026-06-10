@@ -1,4 +1,3 @@
-// Phase 12 notification helpers.
 // The prototype stores in-app notifications and simulated email logs in SQLite
 // instead of sending real email. Keeping that logic here prevents route handlers
 // and dashboard UI from duplicating notification queries.

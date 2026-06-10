@@ -1,4 +1,4 @@
-// `/dashboard` is only a routing hub in Phase 3.
+// `/dashboard` is only a routing hub.
 // Middleware usually redirects before this page renders, but this server page
 // is a safe fallback if the request reaches it.
 

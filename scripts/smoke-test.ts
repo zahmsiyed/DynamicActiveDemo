@@ -1,6 +1,5 @@
-// Phase 13 smoke test script.
 // A smoke test is a small end-to-end check that confirms the main demo path is
-// still alive before a walkthrough, presentation, or future refactor.
+// still working before a walkthrough or presentation.
 
 import { PrismaClient } from "@prisma/client";
 
@@ -14,7 +13,6 @@ import {
 // conflict with other local Next.js apps. APP_BASE_URL lets you override it.
 const baseUrl = process.env.APP_BASE_URL ?? "http://localhost:3001";
 
-// Scripts run outside Next.js, so they create and close their own Prisma client.
 const prisma = new PrismaClient();
 
 type DemoAccount = {
@@ -409,7 +407,7 @@ async function findSeededReportId() {
 }
 
 async function main() {
-  console.log(`Running Phase 13 smoke tests against ${baseUrl}\n`);
+  console.log(`Running smoke tests against ${baseUrl}\n`);
 
   await checkSignedOutOverview();
   await checkInvalidLogin();
@@ -464,7 +462,7 @@ async function main() {
     return;
   }
 
-  console.log("\nAll Phase 13 smoke test checks passed.");
+  console.log("\nAll smoke test checks passed.");
 }
 
 main()

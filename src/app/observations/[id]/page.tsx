@@ -1,4 +1,3 @@
-// Phase 5 observation report page.
 // This page is shared by all roles, but data access is checked before rendering:
 // district admins see district reports, school admins see school reports, and
 // teachers see only reports attached to their own user account.
@@ -290,10 +289,10 @@ export default async function ObservationReportPage({
           <div>
             <h2 className="font-semibold text-brand-ink">Recording upload</h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-brand-muted">
-              Attach an existing classroom recording to this observation.
-              Phase 8 sends the stored file to OpenAI for diarized
-              speech-to-text when an API key is available, then falls back to
-              demo transcript data when the live path cannot run.
+              Attach an existing classroom recording to this observation. The
+              server sends the stored file to OpenAI for diarized speech-to-text
+              when an API key is available, then falls back to demo transcript
+              data when the live path cannot run.
             </p>
           </div>
 
@@ -378,7 +377,7 @@ export default async function ObservationReportPage({
           <div>
             <h2 className="font-semibold text-brand-ink">AI analysis</h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-brand-muted">
-              Phase 9 turns the stored transcript into structured coaching data:
+              Turn the stored transcript into structured coaching data:
               summary, metrics, sentiment, recommendations, heatmap, and
               transcript highlights.
             </p>

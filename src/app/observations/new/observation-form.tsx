@@ -1,6 +1,5 @@
 "use client";
 
-// Phase 5 observation creation form.
 // This is a client component because it handles form state, rubric score state,
 // submit loading, and client-side navigation after the API creates a report.
 

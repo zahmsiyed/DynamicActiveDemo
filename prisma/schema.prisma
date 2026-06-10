@@ -1,6 +1,5 @@
-// Phase 2 is the data-model phase.
-// This file describes the database tables, columns, and relationships before
-// we build authentication, dashboards, forms, or AI features.
+// This file describes the database tables, columns, and relationships for the
+// teacher evaluation prototype.
 
 // The generator creates the TypeScript Prisma Client used by app code and scripts.
 generator client {
@@ -14,7 +13,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Role controls what a user will be allowed to see in later phases.
+// Role controls what a user is allowed to see in the app.
 enum Role {
   DISTRICT_ADMIN
   SCHOOL_ADMIN
@@ -49,7 +48,7 @@ enum SpeakerType {
   UNKNOWN
 }
 
-// InsightIllustration maps AI recommendations to simple UI illustrations later.
+// InsightIllustration maps AI recommendations to simple UI illustrations.
 enum InsightIllustration {
   PATIENCE_CLOCK
   PARTICIPATION_BALANCE
@@ -102,7 +101,7 @@ model User {
   schoolId     String?
   createdAt    DateTime @default(now())
 
-  // District is optional so the schema can support future super-admins if needed.
+  // Scoped queries handle null districtId defensively at the app layer.
   district District? @relation(fields: [districtId], references: [id])
 
   // School is optional because district admins are not tied to one school.
@@ -120,7 +119,7 @@ model User {
   // Feedback this teacher received.
   receivedFeedback Feedback[] @relation("FeedbackTeacher")
 
-  // Notifications and email logs are saved for later reporting/demo flows.
+  // Notifications and email logs support dashboard and report-ready demo flows.
   notifications Notification[]
   emailLogs     EmailLog[]
 }

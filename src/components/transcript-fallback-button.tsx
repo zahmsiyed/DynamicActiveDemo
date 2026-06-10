@@ -1,6 +1,5 @@
 "use client";
 
-// Phase 6 fallback transcript button.
 // This client component owns the click/loading/error state for creating a demo
 // transcript, while the transcript list itself can stay server-rendered.
 

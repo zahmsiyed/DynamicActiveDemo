@@ -18,7 +18,7 @@ The most important feature is the AI classroom recording workflow:
 ## Planned Tech Stack
 
 - Frontend: Next.js App Router, React, TypeScript
-- Styling: Tailwind CSS, shadcn/ui, lucide-react
+- Styling: Tailwind CSS with a small local component system
 - Backend: Next.js Route Handlers
 - Database: SQLite for local development, Prisma ORM
 - Auth: Seeded role-based login with signed HTTP-only cookies

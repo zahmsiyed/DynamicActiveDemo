@@ -1,4 +1,3 @@
-// Shared dashboard shell for Phase 4.
 // It gives every role page the same header, signed-in identity area, and logout
 // behavior while each dashboard supplies its own body content.
 

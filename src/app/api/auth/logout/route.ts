@@ -1,4 +1,3 @@
-// Phase 3 logout API route.
 // Logging out is just deleting the session cookie from the browser.
 
 import { NextResponse } from "next/server";

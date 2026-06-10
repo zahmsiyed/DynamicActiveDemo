@@ -1,5 +1,4 @@
-// Phase 3 current-user API route.
-// This is useful for testing the session and later for client components that
+// This route is useful for testing the session and for client components that
 // need to know who is signed in.
 
 import { NextResponse } from "next/server";

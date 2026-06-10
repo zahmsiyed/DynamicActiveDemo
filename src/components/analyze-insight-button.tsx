@@ -1,6 +1,5 @@
 "use client";
 
-// Phase 9 insight generation button.
 // The server owns the AI work; this client component only manages the click,
 // loading state, and short user-facing result message.
 

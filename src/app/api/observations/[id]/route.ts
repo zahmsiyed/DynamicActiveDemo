@@ -1,6 +1,5 @@
-// Phase 5 single-observation API route.
 // GET returns one report if the signed-in user can view it. PATCH lets a school
-// admin update the editable Phase 5 fields without bypassing role scope.
+// admin update editable report fields without bypassing role scope.
 
 import { ObservationStatus, Role } from "@prisma/client";
 import { NextResponse } from "next/server";
@@ -47,11 +46,11 @@ export async function PATCH(request: Request, { params }: ObservationApiRoutePro
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  // In Phase 5, school admins own observation edits. District admins and
-  // teachers can read reports but should not mutate them.
+  // School admins own observation edits. District admins and teachers can read
+  // reports but should not mutate them.
   if (user.role !== Role.SCHOOL_ADMIN || !user.schoolId || !user.districtId) {
     return NextResponse.json(
-      { error: "Only school admins can update observations in Phase 5." },
+      { error: "Only school admins can update observations." },
       { status: 403 }
     );
   }
@@ -97,7 +96,7 @@ export async function PATCH(request: Request, { params }: ObservationApiRoutePro
     !editableObservationStatuses.has(body.status as ObservationStatus)
   ) {
     return NextResponse.json(
-      { error: "Status must be SCHEDULED or FINALIZED in Phase 5." },
+      { error: "Status must be SCHEDULED or FINALIZED." },
       { status: 400 }
     );
   }

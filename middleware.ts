@@ -1,4 +1,3 @@
-// Phase 3 middleware.
 // Middleware runs before matching pages load. We use it to keep logged-out users
 // away from protected dashboard routes and to send each role to its own area.
 
@@ -34,8 +33,8 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  // The dashboard index is only a routing hub. Send signed-in users to the
-  // role-specific placeholder for now.
+  // The dashboard index is only a routing hub. Send signed-in users to their
+  // role-specific dashboard.
   if (pathname === "/dashboard" && session) {
     return NextResponse.redirect(
       new URL(roleDashboardPath(session.role), request.url)

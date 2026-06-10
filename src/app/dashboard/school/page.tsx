@@ -1,4 +1,3 @@
-// Phase 4 school admin dashboard.
 // This server component is protected by role and then loads school-level data.
 
 import Link from "next/link";

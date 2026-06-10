@@ -1,4 +1,3 @@
-// Phase 9 AI insight API route.
 // School admins call this after a transcript exists. The shared helper handles
 // OpenAI Structured Outputs, fallback generation, and database persistence.
 

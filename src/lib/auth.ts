@@ -1,4 +1,3 @@
-// Phase 3 server-side auth helpers.
 // This file connects the signed session cookie to the real user record in the
 // database. Keep Prisma access here instead of in middleware.
 

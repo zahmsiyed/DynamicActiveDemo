@@ -1,4 +1,3 @@
-// Phase 3 session utilities.
 // This file contains only cookie/JWT logic, so it can be safely imported by
 // middleware without pulling Prisma or database code into the middleware runtime.
 
@@ -22,7 +21,7 @@ export type SessionUser = {
   schoolId: string | null;
 };
 
-// These labels are used by the login page and protected dashboard placeholders.
+// These labels are used by the login page and protected dashboard shell.
 export const roleLabels: Record<AppRole, string> = {
   DISTRICT_ADMIN: "District Admin",
   SCHOOL_ADMIN: "School Admin",
@@ -30,7 +29,7 @@ export const roleLabels: Record<AppRole, string> = {
 };
 
 // Each role gets its own dashboard URL.
-// Phase 4 will replace these placeholders with real dashboard content.
+// Keep this mapping centralized so pages, middleware, and login redirects agree.
 export function roleDashboardPath(role: AppRole) {
   if (role === "DISTRICT_ADMIN") return "/dashboard/district";
   if (role === "SCHOOL_ADMIN") return "/dashboard/school";
@@ -47,9 +46,14 @@ function isAppRole(value: unknown): value is AppRole {
 // jose expects the secret as bytes, so we encode the environment variable once
 // for signing and verifying tokens.
 function getSessionSecret() {
+  const secret = process.env.JWT_SECRET;
+
+  if (!secret && process.env.NODE_ENV === "production") {
+    throw new Error("JWT_SECRET must be set in production.");
+  }
+
   return new TextEncoder().encode(
-    process.env.JWT_SECRET ??
-      "local-phase-3-development-secret-change-before-deploying"
+    secret ?? "local-development-session-secret-change-before-deploying"
   );
 }
 

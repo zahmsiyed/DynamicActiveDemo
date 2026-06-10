@@ -1,4 +1,3 @@
-// Phase 12 PDF report helper.
 // This file creates a small, dependency-free PDF for one observation report.
 // The app route can call it directly, so report export works anywhere the
 // Next.js server can run.

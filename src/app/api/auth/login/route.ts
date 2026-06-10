@@ -1,4 +1,3 @@
-// Phase 3 login API route.
 // The login page sends email/password here, and this route creates the signed
 // HTTP-only cookie when the credentials match a seeded database user.
 
@@ -9,8 +8,7 @@ import { getDb } from "@/lib/db";
 import { signSessionToken, SESSION_COOKIE, roleDashboardPath } from "@/lib/session";
 import { toSessionUser } from "@/lib/auth";
 
-// Keep cookie settings in one place so logout and future auth code are easier
-// to reason about.
+// Keep cookie settings in one place so logout and auth behavior stay aligned.
 const sessionCookieOptions = {
   httpOnly: true,
   sameSite: "lax" as const,
@@ -49,7 +47,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // Users were created in Phase 2 by prisma/seed.ts.
+  // Demo users are created by prisma/seed.ts.
   const user = await getDb().user.findUnique({
     where: {
       email,

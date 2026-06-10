@@ -1,6 +1,5 @@
-// Phase 4 dashboard data helpers.
-// These functions read the Phase 2 database models and shape them into small
-// "view models" that dashboard components can render without knowing Prisma.
+// These functions read Prisma records and shape them into small dashboard view
+// models so components can render without knowing database details.
 
 import { ObservationStatus, Role, type Prisma } from "@prisma/client";
 

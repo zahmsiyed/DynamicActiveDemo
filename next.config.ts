@@ -1,9 +1,8 @@
 // NextConfig gives TypeScript awareness of valid Next.js configuration keys.
 import type { NextConfig } from "next";
 
-// Phase 1 keeps the framework configuration intentionally small.
-// We can add image domains, redirects, or server options later when a real
-// feature needs them.
+// Keep framework configuration intentionally small until a feature needs image
+// domains, redirects, or custom server options.
 const nextConfig: NextConfig = {
   // React Compiler is enabled by the scaffold for safer automatic optimization.
   reactCompiler: true,

@@ -1,4 +1,3 @@
-// Phase 12 PDF export route.
 // It reuses the same observation access rules as the HTML report page, then
 // returns a generated PDF as a downloadable file.
 

@@ -1,4 +1,3 @@
-// Phase 5 create-observation page.
 // This server component protects the route, loads teachers for the current
 // school admin, and hands the actual interactive form to a client component.
 

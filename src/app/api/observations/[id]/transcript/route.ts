@@ -1,6 +1,5 @@
-// Phase 6 transcript API route.
 // GET reads the transcript for an allowed observation. POST creates a demo
-// fallback transcript so this phase works before audio upload and OpenAI exist.
+// fallback transcript for reports that do not have an uploaded recording yet.
 
 import { NextResponse } from "next/server";
 

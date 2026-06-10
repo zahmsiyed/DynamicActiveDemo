@@ -1,6 +1,5 @@
 "use client";
 
-// Phase 11 live classroom recorder.
 // This component owns browser-only APIs: microphone access, WebRTC, the OpenAI
 // Realtime data channel, MediaRecorder, and the final recording upload.
 
@@ -13,6 +12,13 @@ type RealtimeRecorderProps = {
 };
 
 type RecorderState = "idle" | "starting" | "recording" | "uploading";
+
+type RealtimeEventPayload = {
+  delta?: string;
+  error?: { message?: string };
+  transcript?: string;
+  type?: string;
+};
 
 const statusToneClasses = {
   error: "border-rose-200 bg-rose-50 text-rose-700",
@@ -85,12 +91,15 @@ export function RealtimeRecorder({
   }
 
   function handleRealtimeEvent(event: MessageEvent<string>) {
-    const payload = JSON.parse(event.data) as {
-      delta?: string;
-      error?: { message?: string };
-      transcript?: string;
-      type?: string;
-    };
+    let payload: RealtimeEventPayload;
+
+    try {
+      payload = JSON.parse(event.data) as RealtimeEventPayload;
+    } catch {
+      setStatusTone("error");
+      setMessage("Realtime transcription returned an unreadable event.");
+      return;
+    }
 
     if (payload.type === "conversation.item.input_audio_transcription.delta") {
       setCurrentDelta((current) => `${current}${payload.delta ?? ""}`);
@@ -292,9 +301,9 @@ export function RealtimeRecorder({
             Live classroom recording
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-brand-muted">
-            Phase 11 uses the browser microphone for a live transcript preview,
-            then uploads the final recording to the existing audio workflow when
-            the session ends. Final saved transcripts still come from the
+            Use the browser microphone for a live transcript preview, then
+            upload the final recording to the saved transcript workflow when the
+            session ends. Final report transcripts still come from the
             server-side file transcription pass.
           </p>
         </div>
@@ -355,7 +364,7 @@ export function RealtimeRecorder({
           <p className="mt-4 text-sm leading-6 text-brand-muted">
             Transcript deltas will appear here when the Realtime data channel is
             connected. If Realtime is unavailable, the final uploaded recording
-            can still create a saved transcript through the Phase 8 path.
+            can still create a saved transcript.
           </p>
         )}
       </div>

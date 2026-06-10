@@ -1,4 +1,3 @@
-// Phase 11 OpenAI Realtime session route.
 // The browser posts its WebRTC offer SDP here instead of calling OpenAI
 // directly. That keeps the real OpenAI API key on the trusted server.
 

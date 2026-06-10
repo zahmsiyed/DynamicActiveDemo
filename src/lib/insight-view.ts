@@ -1,4 +1,3 @@
-// Phase 10 insight view helpers.
 // The database stores insight sections as JSON, so this file converts those raw
 // fields into a stable display shape before components render them.
 

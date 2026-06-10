@@ -1,4 +1,3 @@
-// Phase 5 evaluation helpers.
 // These labels keep raw Prisma enum values out of forms, reports, and tables.
 
 import { EvaluationCategory } from "@prisma/client";

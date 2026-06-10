@@ -1,4 +1,3 @@
-// Phase 9 AI insight helpers.
 // This file owns the classroom insight schema, OpenAI Structured Outputs call,
 // deterministic fallback insight generation, and Prisma persistence.
 
@@ -26,8 +25,8 @@ const illustrationKeySchema = z.enum([
   InsightIllustration.PACING_GAUGE,
 ]);
 
-// The schema is intentionally close to the existing Insight model: one summary,
-// several JSON sections, and an illustration key used by the later UI phase.
+// The schema is intentionally close to the Insight model: one summary, several
+// JSON sections, and an illustration key used by the report UI.
 export const classroomInsightSchema = z.object({
   summary: z.string(),
   metrics: z.object({
@@ -579,7 +578,7 @@ export async function generateInsightForObservation(
 ) {
   if (user.role !== "SCHOOL_ADMIN" || !user.schoolId || !user.districtId) {
     return {
-      error: "Only school admins can generate AI insights in Phase 9.",
+      error: "Only school admins can generate AI insights.",
       status: 403,
     };
   }

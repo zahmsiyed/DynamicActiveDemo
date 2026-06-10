@@ -1,6 +1,5 @@
-// Phase 6 and Phase 8 transcript helpers.
-// The database tables already existed from Phase 2; this file gives the app a
-// safe way to format, read, create, and generate transcript records.
+// Transcript helpers for formatting, role-scoped reads, fallback transcript
+// generation, OpenAI transcription, and database persistence.
 
 import { readFile } from "fs/promises";
 import path from "path";
@@ -302,7 +301,7 @@ export async function createFallbackTranscriptFromUpload(
   const transcript = await replaceObservationTranscript({
     observationId,
     provider: "demo-fallback",
-    model: "phase-8-fallback-transcript",
+    model: "fallback-transcript",
     text: buildFallbackTranscriptText(segments),
     segments: segmentInputs,
   });
@@ -437,7 +436,7 @@ export async function generateTranscriptForObservation(
 ) {
   if (user.role !== "SCHOOL_ADMIN" || !user.schoolId || !user.districtId) {
     return {
-      error: "Only school admins can generate transcripts in Phase 8.",
+      error: "Only school admins can generate transcripts.",
       status: 403,
     };
   }
@@ -553,14 +552,14 @@ export async function getObservationTranscriptForUser(
 }
 
 // Create a demo transcript for a school admin's observation when no audio upload
-// or real transcription exists yet. This keeps Phase 6 testable on its own.
+// or finalized transcription exists yet.
 export async function createFallbackTranscriptForObservation(
   observationId: string,
   user: ObservationUser
 ) {
   if (user.role !== "SCHOOL_ADMIN" || !user.schoolId || !user.districtId) {
     return {
-      error: "Only school admins can create fallback transcripts in Phase 6.",
+      error: "Only school admins can create fallback transcripts.",
       status: 403,
     };
   }
@@ -611,7 +610,7 @@ export async function createFallbackTranscriptForObservation(
       data: {
         observationId: observation.id,
         provider: "demo-fallback",
-        model: "phase-6-seeded-transcript",
+        model: "fallback-transcript",
         text,
         segments: {
           create: segments.map((segment) => ({

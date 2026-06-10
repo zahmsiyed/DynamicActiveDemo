@@ -1,6 +1,5 @@
-// Phase 6 and Phase 10 transcript viewer.
 // This server component renders timestamped transcript segments, keeps the
-// Phase 6 fallback button available, and marks Phase 10 AI evidence rows.
+// fallback button available, and marks transcript rows used by AI highlights.
 
 import { SpeakerType } from "@prisma/client";
 

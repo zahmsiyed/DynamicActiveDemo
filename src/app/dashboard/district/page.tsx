@@ -1,4 +1,3 @@
-// Phase 4 district dashboard.
 // This server component is protected by role and then loads district-wide data.
 
 import { DashboardShell } from "@/components/dashboard-shell";

@@ -1,4 +1,3 @@
-// Phase 7 audio upload helpers.
 // These helpers keep file validation and local-disk storage out of the route
 // handler so the upload rules are easy to audit.
 
@@ -9,7 +8,7 @@ import path from "path";
 // files into memory. Production would stream to object storage instead.
 export const maxAudioUploadBytes = 25 * 1024 * 1024;
 
-// Phase 7 accepts common classroom audio/video container types.
+// The prototype accepts common classroom audio/video container types.
 export const acceptedAudioMimeTypes = [
   "audio/mpeg",
   "audio/mp3",
@@ -236,8 +235,15 @@ export async function removeStoredAudioUpload(storagePath: string | null) {
 
   const uploadRoot = path.resolve(process.cwd(), ".uploads");
   const filePath = path.resolve(/* turbopackIgnore: true */ process.cwd(), storagePath);
+  const relativePath = path.relative(uploadRoot, filePath);
 
-  if (!filePath.startsWith(uploadRoot)) return;
+  if (
+    filePath === uploadRoot ||
+    relativePath.startsWith("..") ||
+    path.isAbsolute(relativePath)
+  ) {
+    return;
+  }
 
   try {
     await unlink(filePath);

@@ -1,7 +1,6 @@
-// Phase 10 structured insight panel.
-// This server component turns the Phase 9 insight data into a polished report
-// surface with summary cards, simple charts, recommendation illustrations, and
-// transcript evidence cards.
+// This server component turns stored insight data into a polished report surface
+// with summary cards, charts, recommendation illustrations, and transcript
+// evidence cards.
 
 import { InsightIllustration } from "@prisma/client";
 

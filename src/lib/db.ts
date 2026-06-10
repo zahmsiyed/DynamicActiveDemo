@@ -1,6 +1,6 @@
 // This file gives the app one shared way to access the database.
-// Later phases will import getDb() from API routes, server components, and
-// server actions instead of creating PrismaClient repeatedly.
+// API routes, server components, and scripts use getDb() instead of creating
+// PrismaClient repeatedly.
 
 import { PrismaClient } from "@prisma/client";
 

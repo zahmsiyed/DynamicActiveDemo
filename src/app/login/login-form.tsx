@@ -6,8 +6,8 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState, useTransition } from "react";
 
-// These are the seeded Phase 2 accounts. Clicking a button fills the form so
-// the auth flow is easy to test while learning.
+// These are the seeded demo accounts. Clicking a button fills the form so the
+// auth flow is easy to test while learning.
 const demoAccounts = [
   {
     role: "District Admin",
@@ -27,8 +27,8 @@ const demoAccounts = [
 ];
 
 const productSignals = [
-  { label: "Reports ready", value: "6" },
-  { label: "AI insights", value: "2" },
+  { label: "Reports ready", value: "7" },
+  { label: "AI insights", value: "3" },
   { label: "Avg score", value: "3.6" },
 ];
 
@@ -37,6 +37,28 @@ const observationSignalRows = [
   { colorClass: "bg-brand-gold", label: "Student talk", value: 38 },
   { colorClass: "bg-emerald-400", label: "Clarity", value: 84 },
 ];
+
+function safeRedirectPath(requestedPath: string | null, fallbackPath: string) {
+  if (!requestedPath) return fallbackPath;
+  if (!requestedPath.startsWith("/") || requestedPath.startsWith("//")) {
+    return fallbackPath;
+  }
+
+  if (requestedPath === "/login" || requestedPath === "/dashboard") {
+    return fallbackPath;
+  }
+
+  const isAllowedDashboardPath =
+    requestedPath.startsWith("/dashboard/") &&
+    requestedPath.startsWith(fallbackPath);
+  const isAllowedObservationPath = requestedPath.startsWith("/observations/");
+
+  if (!isAllowedDashboardPath && !isAllowedObservationPath) {
+    return fallbackPath;
+  }
+
+  return requestedPath;
+}
 
 export function LoginForm() {
   const router = useRouter();
@@ -77,7 +99,9 @@ export function LoginForm() {
       }
 
       // Refresh makes server components read the new cookie immediately.
-      router.push(requestedPath || result.redirectPath || "/dashboard");
+      router.push(
+        safeRedirectPath(requestedPath, result.redirectPath || "/dashboard")
+      );
       router.refresh();
     });
   }

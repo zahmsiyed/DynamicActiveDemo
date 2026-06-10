@@ -1,4 +1,3 @@
-// Phase 5 observation workflow helpers.
 // This file keeps observation access checks and report queries in one place so
 // pages and route handlers do not duplicate authorization rules.
 
@@ -16,7 +15,7 @@ export type ObservationUser = {
 };
 
 // The report page needs the observation plus its rubric, feedback, organization,
-// and later-phase data flags.
+// and AI/audio workflow data flags.
 export const observationReportInclude = {
   teacher: {
     select: {

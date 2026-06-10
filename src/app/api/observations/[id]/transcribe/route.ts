@@ -1,4 +1,3 @@
-// Phase 8 finalized transcription API route.
 // School admins call this route after a recording has been uploaded. The shared
 // transcript helper owns the OpenAI call, fallback behavior, and status update.
 

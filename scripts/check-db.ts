@@ -1,10 +1,7 @@
-// This small script verifies that the local database is usable.
-// It prints counts and one observation summary so each phase can confirm its
-// data exists before building UI on top of it.
+// Verify that the local database has the records needed for the demo flow.
 
 import { PrismaClient } from "@prisma/client";
 
-// Scripts run outside Next.js, so they can create and close their own client.
 const prisma = new PrismaClient();
 
 async function main() {
@@ -49,7 +46,7 @@ async function main() {
     },
   });
 
-  // These logs are intentionally human-readable so the output is useful while learning.
+  // Human-readable output makes this useful before demos and UI debugging.
   console.table({
     districts,
     schools,

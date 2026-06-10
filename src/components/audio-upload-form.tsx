@@ -1,6 +1,5 @@
 "use client";
 
-// Phase 7 audio upload form.
 // The server report page passes validation hints down, while this client
 // component owns the selected file, loading state, and form submission.
 

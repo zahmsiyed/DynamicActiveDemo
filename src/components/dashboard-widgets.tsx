@@ -1,4 +1,3 @@
-// Shared Phase 4 dashboard widgets.
 // These are intentionally simple server components: they receive prepared data
 // and render it without fetching or mutating anything.
 
@@ -47,7 +46,6 @@ function SignalPill({ active, label }: { active: boolean; label: string }) {
   );
 }
 
-// MetricGrid is used at the top of every dashboard for fast scanning.
 export function MetricGrid({ metrics }: { metrics: Metric[] }) {
   return (
     <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
@@ -74,7 +72,6 @@ export function MetricGrid({ metrics }: { metrics: Metric[] }) {
   );
 }
 
-// StatusBadge converts the raw observation status into a readable colored pill.
 export function StatusBadge({ status }: { status: DashboardObservation["status"] }) {
   return (
     <span
@@ -180,7 +177,6 @@ export function ObservationTable({
   );
 }
 
-// StatusSummary renders a compact operational view of the observation pipeline.
 export function StatusSummary({ counts }: { counts: StatusCount[] }) {
   const total = counts.reduce((sum, item) => sum + item.count, 0);
 
@@ -214,7 +210,6 @@ export function StatusSummary({ counts }: { counts: StatusCount[] }) {
   );
 }
 
-// SchoolRows gives district admins a school-by-school scan.
 export function SchoolRows({
   schools,
 }: {
@@ -248,7 +243,6 @@ export function SchoolRows({
   );
 }
 
-// TeacherRows gives school admins a teacher-by-teacher scan.
 export function TeacherRows({
   teachers,
 }: {
@@ -290,7 +284,6 @@ export function TeacherRows({
   );
 }
 
-// RecommendationList shows teacher-facing AI recommendations from the seeded insight.
 export function RecommendationList({
   recommendations,
 }: {
@@ -329,7 +322,6 @@ export function RecommendationList({
   );
 }
 
-// FeedbackList gives teachers a chronological scan of administrator feedback.
 export function FeedbackList({
   feedback,
 }: {

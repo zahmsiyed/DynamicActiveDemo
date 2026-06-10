@@ -1,4 +1,3 @@
-// Phase 5 create-observation API route.
 // School admins submit the observation form here. The route validates the
 // payload, checks teacher scope, creates rubric scores, and saves feedback.
 
@@ -75,10 +74,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  // Phase 5 creation is intentionally scoped to school admins.
+  // Observation creation is intentionally scoped to school admins.
   if (user.role !== Role.SCHOOL_ADMIN || !user.schoolId || !user.districtId) {
     return NextResponse.json(
-      { error: "Only school admins can create observations in Phase 5." },
+      { error: "Only school admins can create observations." },
       { status: 403 }
     );
   }
