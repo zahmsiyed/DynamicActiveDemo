@@ -60,6 +60,21 @@ function safeRedirectPath(requestedPath: string | null, fallbackPath: string) {
   return requestedPath;
 }
 
+async function readLoginResult(response: Response) {
+  try {
+    return (await response.json()) as {
+      error?: string;
+      redirectPath?: string;
+    };
+  } catch {
+    return {
+      error: response.ok
+        ? "Login returned an unexpected response."
+        : "Login is temporarily unavailable.",
+    };
+  }
+}
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -77,21 +92,25 @@ export function LoginForm() {
     setError("");
 
     startTransition(async () => {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      });
+      let response: Response;
 
-      const result = (await response.json()) as {
-        error?: string;
-        redirectPath?: string;
-      };
+      try {
+        response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            password,
+          }),
+        });
+      } catch {
+        setError("Login is temporarily unavailable.");
+        return;
+      }
+
+      const result = await readLoginResult(response);
 
       if (!response.ok) {
         setError(result.error ?? "Login failed.");

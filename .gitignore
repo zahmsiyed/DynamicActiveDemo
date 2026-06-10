@@ -36,6 +36,7 @@ yarn-error.log*
 
 # local SQLite databases created during Phase 2
 prisma/*.db
+!prisma/seed.db
 prisma/*.db-journal
 
 # local classroom recordings uploaded during Phase 7

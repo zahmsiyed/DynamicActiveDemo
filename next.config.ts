@@ -6,6 +6,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // React Compiler is enabled by the scaffold for safer automatic optimization.
   reactCompiler: true,
+  // The Vercel serverless bundle needs the seeded SQLite template so runtime
+  // code can copy it into writable /tmp storage before Prisma connects.
+  outputFileTracingIncludes: {
+    "/*": ["./prisma/seed.db"],
+  },
 };
 
 // Next.js reads this default export when it starts the dev server or builds.

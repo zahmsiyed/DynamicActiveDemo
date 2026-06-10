@@ -1,1136 +1,408 @@
-# Teacher Evaluation & Classroom Observation App
-
-The finished application should support three user roles:
-
-- District admins: view district-wide schools, teachers, evaluations, analytics, and goals.
-- School admins: conduct observations, upload recordings, score evaluations, write feedback, and review AI insights.
-- Teachers: view reports, feedback, generated recommendations, transcript summaries, and growth over time.
-
-The most important feature is the AI classroom recording workflow:
-
-1. Record or upload classroom audio/video.
-2. Convert speech to text.
-3. Store timestamped transcript segments.
-4. Analyze the transcript.
-5. Generate instructional insights.
-6. Present the results in a clean teacher-facing report.
-
-## Planned Tech Stack
-
-- Frontend: Next.js App Router, React, TypeScript
-- Styling: Tailwind CSS with a small local component system
-- Backend: Next.js Route Handlers
-- Database: SQLite for local development, Prisma ORM
-- Auth: Seeded role-based login with signed HTTP-only cookies
-- AI: OpenAI transcription and structured insight generation, with fallback demo data
-- Reports: Exportable PDF reports
-
-## Current Status
-
-Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, and Phase 13 are implemented.
-
-Phase 1 added:
-
-- Next.js app foundation
-- TypeScript
-- Tailwind CSS
-- Commented homepage
-- Basic project documentation
-
-Phase 2 added:
-
-- Prisma ORM
-- Local SQLite database
-- Commented database schema
-- Seed script with demo district, schools, users, observations, transcript data, and insights
-- Shared database helper for later server-side app code
-- Database verification script
-
-Phase 3 added:
-
-- Seeded login form
-- Signed HTTP-only session cookie
-- Login, logout, and current-user API routes
-- Middleware protection for dashboard routes
-- Role-based redirects
-- Minimal protected dashboard placeholders
-
-Phase 4 added:
-
-- District admin dashboard with schools, teacher counts, completion rate, average scores, status tracking, and recent observations
-- School admin dashboard with teacher coverage, upcoming evaluations, recording/transcript status, feedback queue, and observation tracker
-- Teacher dashboard with personal reports, latest AI summary, recommendations, feedback history, and growth metrics
-- Shared dashboard shell and reusable dashboard widgets
-- Server-side dashboard query helpers
+# Teacher Evaluation Studio
+
+Teacher Evaluation Studio is a Next.js prototype for classroom observation workflows. It gives district admins, school admins, and teachers role-scoped dashboards for creating observations, reviewing rubric feedback, attaching classroom recordings, generating transcripts, producing coaching insights, and exporting PDF reports.
+
+The app is useful as a local demo and codebase reference. It is not production-ready without replacing the local database and file-storage pieces described below.
+
+## Contents
+
+- [Product Summary](#product-summary)
+- [Current Capabilities](#current-capabilities)
+- [Tech Stack](#tech-stack)
+- [Local Setup](#local-setup)
+- [Demo Accounts](#demo-accounts)
+- [Codebase Map](#codebase-map)
+- [How To Read The Code](#how-to-read-the-code)
+- [Data Model](#data-model)
+- [Auth And Role Scope](#auth-and-role-scope)
+- [Routes](#routes)
+- [API Overview](#api-overview)
+- [AI Workflow](#ai-workflow)
+- [State And Storage](#state-and-storage)
+- [Testing](#testing)
+- [Vercel And Production Readiness](#vercel-and-production-readiness)
+- [Known Limitations](#known-limitations)
+
+## Product Summary
+
+The product problem:
+
+- School leaders need a structured way to create teacher observations, score rubric categories, attach feedback, and review classroom evidence.
+- Teachers need a clear place to review reports, feedback, transcript evidence, and AI-generated coaching recommendations.
+- District leaders need district-wide visibility across schools, teachers, completion status, and evaluation trends.
+
+The main workflow:
+
+1. A school admin creates or opens an observation.
+2. The observation stores rubric scores and written feedback.
+3. The school admin records live audio or uploads classroom media.
+4. The server stores upload metadata and generates a final transcript.
+5. If `OPENAI_API_KEY` exists, transcription and insight generation use OpenAI.
+6. If OpenAI is unavailable, deterministic fallback transcript and insight data keep the demo usable.
+7. A teacher can view the report, transcript, AI insight, recommendations, and PDF export.
+8. Finalized reports create in-app notifications and simulated email log rows.
+
+## Current Capabilities
+
+Implemented today:
+
+- Public overview at `/` for signed-out users.
+- Seeded role-based login with bcrypt password verification.
+- Signed JWT sessions stored in an HTTP-only cookie named `teacher_eval_session`.
+- Middleware protection for dashboard and observation pages.
+- Server-side auth checks in pages and API routes.
+- District, school admin, and teacher dashboards.
+- Observation creation for school admins.
+- Role-scoped observation report pages.
+- Rubric scoring with six categories and score range 1 to 5.
+- Written feedback storage.
+- Recording upload UI for MP3, WAV, MP4, M4A, and WebM.
+- Local ignored `.uploads/` storage for uploaded classroom recordings.
+- OpenAI file transcription when `OPENAI_API_KEY` exists.
+- Realtime browser microphone workflow using WebRTC and `POST /api/realtime/session`.
+- OpenAI structured insight generation when `OPENAI_API_KEY` exists.
+- Deterministic fallback transcript and insight generation.
+- PDF export route at `GET /api/observations/:id/report.pdf`.
+- In-app notification center and simulated email logs.
+- Repeatable seed data and smoke test script.
+
+## Tech Stack
+
+| Area | Current implementation |
+| --- | --- |
+| Framework | Next.js App Router in `src/app` |
+| UI | React 19, TypeScript, Server Components by default |
+| Client interactivity | Client components for login, logout, forms, uploads, transcription, insight generation, and realtime recording |
+| Styling | Tailwind CSS v4 through `@tailwindcss/postcss` and `src/app/globals.css` |
+| Database | Prisma ORM with local SQLite at `prisma/dev.db` |
+| Auth | Seeded users, `bcryptjs`, `jose`, signed HTTP-only JWT cookie |
+| AI transcription | OpenAI file transcription via `gpt-4o-transcribe-diarize` when configured |
+| Realtime transcription | OpenAI Realtime WebRTC session route using `gpt-realtime-whisper` |
+| AI insights | OpenAI Responses API structured output plus Zod validation |
+| Fallback AI | Deterministic transcript and insight generation without `OPENAI_API_KEY` |
+| PDF | Local dependency-free PDF generator in `src/lib/pdf-report.ts` |
+| Scripts | `tsx` for TypeScript scripts |
+| Quality checks | ESLint and `next build` |
+
+There is no shadcn/ui package or lucide icon dependency in the current `package.json`. The app uses local components in `src/components`.
+
+## Local Setup
+
+Requirements:
+
+- Node 20 or newer.
+- npm.
+- SQLite CLI. `npm run db:init` pipes generated SQL into `sqlite3`.
+
+Install dependencies:
+
+```bash
+npm install
+```
 
-Phase 5 added:
+Create a local environment file:
 
-- School admin observation creation form
-- Role-scoped observation list API
-- Role-scoped single-observation read API
-- School-admin observation update API for Phase 5 fields
-- Rubric score validation and storage
-- Written feedback storage
-- Teacher-facing observation report page
-- Dashboard links into report pages
+```bash
+cp .env.example .env
+```
 
-Phase 6 added:
+Minimum local environment values:
 
-- Timestamped transcript viewer on observation reports
-- Speaker labels for teacher, student, group, and unknown speaker turns
-- Transcript duration, segment count, speaker count, and provider metadata
-- Role-scoped transcript read API
-- School-admin demo fallback transcript creation API
-- Demo fallback transcript button for reports without a transcript
-- Database verification output for transcription records
+```bash
+DATABASE_URL="file:./dev.db"
+JWT_SECRET="replace-this-with-a-long-random-secret"
+```
 
-Phase 7 added:
+Optional OpenAI values:
 
-- School-admin classroom recording upload form on observation reports
-- Local file validation for MP3, WAV, MP4, M4A, and WebM
-- 25 MB prototype upload limit
-- Local ignored `.uploads/` storage for recording files
-- `AudioUpload` metadata create/update behavior
-- Automatic fallback transcript creation after upload
-- Database verification output for audio upload records
+```bash
+OPENAI_API_KEY="sk-..."
+OPENAI_INSIGHT_MODEL="gpt-4o-mini"
+```
 
-Phase 8 added:
-
-- `OPENAI_API_KEY` support through ignored `.env.local`
-- OpenAI finalized file transcription for uploaded recordings
-- `gpt-4o-transcribe-diarize` diarized transcript requests
-- Parsing diarized speaker segments into `TranscriptSegment` rows
-- Automatic OpenAI-or-fallback transcript generation after upload
-- Manual school-admin transcript regeneration from the report page
-- A dedicated `POST /api/observations/:id/transcribe` route
-
-Phase 9 added:
-
-- Zod-backed classroom insight schema
-- OpenAI Structured Outputs insight generation
-- `POST /api/observations/:id/analyze` route
-- Deterministic fallback insight generation when OpenAI is unavailable
-- Insight storage in the existing `Insight` Prisma model
-- Report-page AI analysis button
-- Structured insight panel with summary, metrics, pacing note, sentiment, heatmap, recommendations, and highlights
-
-Phase 10 added:
-
-- A reusable insight view parser for safe JSON-to-UI conversion
-- Polished insight summary cards
-- Talk-balance and instructional score charts
-- Priority-styled coaching recommendations
-- Simple CSS-based recommendation illustrations
-- Participation heatmap display
-- Transcript evidence cards
-- Highlighted transcript rows that match AI evidence timestamps
-
-Phase 11 added:
-
-- Browser microphone recorder on school-admin observation reports
-- OpenAI Realtime session route at `POST /api/realtime/session`
-- WebRTC offer/answer exchange through the app server
-- Live transcript preview from Realtime transcription delta/completion events
-- Final local recording upload after the live session ends
-- Fallback behavior when live Realtime setup cannot run
-
-Phase 12 added:
-
-- Exportable observation report PDFs
-- `GET /api/observations/:id/report.pdf` route
-- Report-page `Export PDF` link
-- In-app notification center in the shared dashboard shell
-- Report-ready notification creation when a report is finalized
-- Simulated email log creation for teacher report notifications
-
-Phase 13 added:
-
-- Repeatable smoke test command for the local demo path
-- Seeded data readiness checks for reports, transcripts, insights, notifications, and simulated email logs
-- Seeded login, role dashboard, observation API, PDF export, and Realtime guard checks
-- Demo walkthrough documentation for presenting the prototype step by step
-
-The main assignment build is implemented and now has a repeatable demo-prep check.
-
-## Phase 2 Files
-
-`prisma/schema.prisma`
-
-The database blueprint. This file defines the tables, fields, enum values, and relationships.
-
-`prisma/seed.ts`
-
-Creates realistic demo data so future phases have something to display.
-
-`src/lib/db.ts`
-
-A small helper that creates a shared Prisma Client for future API routes and server components.
-
-`scripts/check-db.ts`
-
-A learning/debug script that confirms the database has seeded records and connected relationships.
-
-`.env`
-
-Local database configuration. This file is ignored by Git.
-
-`.env.example`
-
-Safe example environment file showing which variables are needed.
-
-## Phase 3 Files
-
-`src/lib/session.ts`
-
-Pure session/JWT utilities. This file signs and verifies session tokens and maps each role to its dashboard route.
-
-`src/lib/auth.ts`
-
-Server-side auth helpers. This file reads the session cookie, loads the current database user, and protects server-rendered pages.
-
-`middleware.ts`
-
-Runs before protected pages load. It redirects logged-out users to `/login` and keeps users inside their own role-specific dashboard path.
-
-`src/app/api/auth/login/route.ts`
-
-Checks email/password against seeded users, verifies the hashed password, creates the signed cookie, and returns the correct dashboard path.
-
-`src/app/api/auth/logout/route.ts`
-
-Deletes the session cookie.
-
-`src/app/api/auth/me/route.ts`
-
-Returns the current signed-in user. This is useful for testing and later client-side UI.
-
-`src/app/login/page.tsx`
-
-Public login page wrapper.
-
-`src/app/login/login-form.tsx`
-
-Client-side login form with seeded demo account buttons.
-
-`src/app/dashboard/page.tsx`
-
-Dashboard routing hub. Signed-in users are sent to the correct role-specific dashboard.
-
-`src/app/dashboard/district/page.tsx`
-
-Protected placeholder for district admins.
-
-`src/app/dashboard/school/page.tsx`
-
-Protected placeholder for school admins.
-
-`src/app/dashboard/teacher/page.tsx`
-
-Protected placeholder for teachers.
-
-`src/components/logout-button.tsx`
-
-Client-side logout button.
-
-`src/components/phase-three-dashboard.tsx`
-
-This placeholder was removed in Phase 4 after real dashboards replaced it.
-
-## Phase 4 Files
-
-`src/lib/dashboard-data.ts`
-
-Server-side dashboard query helpers. This file reads Prisma data, computes metrics, and transforms database records into dashboard-friendly objects.
-
-`src/components/dashboard-shell.tsx`
-
-Shared dashboard page shell. It renders the header, user identity, role scope, navigation, and logout button around each dashboard.
-
-`src/components/dashboard-widgets.tsx`
-
-Reusable dashboard UI components including metric cards, observation tables, status tracking, school rows, teacher rows, recommendations, and feedback lists.
-
-`src/app/dashboard/district/page.tsx`
-
-District admin dashboard. It shows district-wide school and observation analytics.
-
-`src/app/dashboard/school/page.tsx`
-
-School admin dashboard. It shows operational queues and school-level observation tracking.
-
-`src/app/dashboard/teacher/page.tsx`
-
-Teacher dashboard. It shows the teacher's observation history, feedback, and AI insight summary.
-
-## Phase 5 Files
-
-`src/lib/evaluation.ts`
-
-Shared rubric labels, category descriptions, category ordering, and average-score calculation.
-
-`src/lib/observation-input.ts`
-
-Shared API validation helpers. This file turns unknown JSON request data into safe observation fields and rubric score rows.
-
-`src/lib/observations.ts`
-
-Shared observation query and authorization helpers. This keeps report access rules in one place.
-
-`src/app/api/observations/route.ts`
-
-Observation collection API. `GET` returns observations scoped to the signed-in role, and `POST` creates a new observation for a teacher in the school admin's school.
-
-`src/app/api/observations/[id]/route.ts`
-
-Single-observation API. `GET` returns one allowed report, and `PATCH` updates Phase 5 editable fields for school admins.
-
-`src/app/observations/new/page.tsx`
-
-Protected school-admin page for creating a teacher observation.
-
-`src/app/observations/new/observation-form.tsx`
-
-Client-side form for teacher selection, observation details, scoring, summary, and feedback.
-
-`src/app/observations/[id]/page.tsx`
-
-Shared report page. District admins, school admins, and teachers can open only the reports they are allowed to see.
-
-`src/components/dashboard-widgets.tsx`
-
-The observation table now links each row to its report page.
-
-## Phase 6 Files
-
-`src/lib/transcripts.ts`
-
-Shared transcript helpers. This file formats timestamps, labels speaker types, reads role-scoped transcripts, and creates demo fallback transcript rows.
-
-`src/app/api/observations/[id]/transcript/route.ts`
-
-Transcript API. `GET` reads one allowed observation transcript, and `POST` creates a demo fallback transcript for school admins.
-
-`src/components/transcript-viewer.tsx`
-
-Server-rendered transcript viewer for report pages. It shows transcript metrics and timestamped speaker turns.
-
-`src/components/transcript-fallback-button.tsx`
-
-Client-side button that asks the transcript API to create fallback transcript data, then refreshes the report.
-
-`src/app/observations/[id]/page.tsx`
-
-The report page now renders the transcript viewer below the workflow readiness section.
-
-`scripts/check-db.ts`
-
-The database check now reports both transcription records and transcript segment records.
-
-## Phase 7 Files
-
-`src/lib/audio-uploads.ts`
-
-Shared audio upload helpers. This file validates recording type and size, formats file sizes, stores recordings in `.uploads/`, and removes replaced local files.
-
-`src/app/api/observations/[id]/audio/route.ts`
-
-Audio upload API. `POST` accepts one school-admin recording upload, validates scope and file type, stores metadata in `AudioUpload`, and now starts Phase 8 transcript generation.
-
-`src/components/audio-upload-form.tsx`
-
-Client-side recording upload form used on the report page.
-
-`src/app/observations/[id]/page.tsx`
-
-The report page now shows recording metadata and the upload form for school admins.
-
-`.gitignore`
-
-Ignores the local `.uploads/` directory so classroom recording files are not committed.
-
-`scripts/check-db.ts`
-
-The database check now reports audio upload records and sample upload metadata.
-
-## Phase 8 Files
-
-`src/lib/transcripts.ts`
-
-Shared transcript helpers. This file now formats transcript data, reads role-scoped transcript data, builds fallback transcript rows, calls OpenAI finalized transcription, parses diarized segments, replaces stored transcript rows, and updates observation status.
-
-`src/app/api/observations/[id]/transcribe/route.ts`
-
-Final transcription API. `POST` lets a school admin generate or regenerate the finalized transcript for an observation that already has an uploaded recording.
-
-`src/app/api/observations/[id]/audio/route.ts`
-
-The upload API now chains into Phase 8 after saving the file, so a successful upload also attempts transcript generation.
-
-`src/components/transcribe-button.tsx`
-
-Client-side report button for manual final transcript generation. It shows loading, error, OpenAI success, and fallback messages.
-
-`src/app/observations/[id]/page.tsx`
-
-The report page now shows the Phase 8 transcription control when a recording has been uploaded.
-
-`.env.local`
-
-Ignored local environment file. This is where `OPENAI_API_KEY` is stored for real OpenAI transcription during local development.
-
-## Phase 9 Files
-
-`src/lib/insights.ts`
-
-Shared AI insight helper. This file defines the Zod schema, creates the OpenAI JSON Schema, builds the prompt, calls the Responses API with Structured Outputs, validates the parsed result, creates fallback insights, stores the `Insight` row, and updates observation status.
-
-`src/app/api/observations/[id]/analyze/route.ts`
-
-AI analysis API. `POST` lets a school admin generate or regenerate structured insights for an observation that already has a transcript.
-
-`src/components/analyze-insight-button.tsx`
-
-Client-side report button for insight generation. It shows loading, error, OpenAI success, and fallback messages.
-
-`src/components/insight-panel.tsx`
-
-Server-rendered structured insight panel. It safely reads JSON fields and displays summary, metrics, pacing notes, sentiment, heatmap, recommendations, and transcript highlights.
-
-`src/app/observations/[id]/page.tsx`
-
-The report page now shows a Phase 9 AI analysis workflow section and renders the structured insight panel.
-
-`package.json`
-
-Adds `zod` so server code can validate the generated insight object before it is stored.
-
-## Phase 10 Files
-
-`src/lib/insight-view.ts`
-
-Shared view-model helper. This file turns raw Prisma JSON fields from `Insight` into typed display data for the report UI.
-
-`src/components/insight-panel.tsx`
-
-The structured insight panel now renders summary cards, simple charts, recommendation illustrations, priority labels, sentiment, heatmap rows, and evidence cards.
-
-`src/components/transcript-viewer.tsx`
-
-The transcript viewer now accepts insight highlight timestamps and marks matching transcript rows as `Insight highlight`.
-
-`src/app/observations/[id]/page.tsx`
-
-The report page now creates one parsed insight view and shares it with both the insight panel and transcript viewer.
-
-`src/app/page.tsx`
-
-The public overview reflects the polished insight report layer, while authenticated users are redirected to their role dashboard.
-
-## Phase 11 Files
-
-`src/app/api/realtime/session/route.ts`
-
-Server-side OpenAI Realtime session route. The browser sends an SDP offer to this route, and the route checks authentication, validates school-admin observation scope, and forwards the offer to OpenAI with a transcription-only session configuration.
-
-`src/components/realtime-recorder.tsx`
-
-Client-side live recorder. It asks for microphone access, starts a `MediaRecorder`, creates a WebRTC peer connection, listens for transcript deltas on the OpenAI data channel, and uploads the final recording through the existing Phase 7 audio route when stopped.
-
-`src/app/observations/[id]/page.tsx`
-
-The report page now shows the live classroom recording workflow for school admins before the manual recording upload card.
-
-## Phase 12 Files
-
-`src/lib/pdf-report.ts`
-
-Dependency-free PDF builder for observation reports. It renders report metadata, summary, rubric scores, feedback, transcript evidence, and AI insight data into a downloadable PDF.
-
-`src/app/api/observations/[id]/report.pdf/route.ts`
-
-Role-scoped PDF export route. It uses the same report access rules as the HTML report page and returns `application/pdf`.
-
-`src/lib/notifications.ts`
-
-Shared notification helper. It loads the signed-in user's notification center, creates report-ready in-app notifications, and writes simulated teacher email logs.
-
-`src/components/dashboard-shell.tsx`
-
-The shared shell now displays recent in-app notifications and simulated email log entries for the signed-in user.
-
-`src/app/api/observations/route.ts`
-
-Creating a finalized report now emits report-ready notifications.
-
-`src/app/api/observations/[id]/route.ts`
-
-Updating a report into `FINALIZED` now emits report-ready notifications.
-
-## Phase 13 Files
-
-`scripts/smoke-test.ts`
-
-Repeatable smoke test script. It logs in as each seeded role, checks role-scoped dashboards and APIs, verifies the seeded report, confirms the PDF export endpoint returns a PDF, and confirms the Realtime route fails safely without starting a live call.
-
-`docs/demo-walkthrough.md`
-
-Presentation walkthrough. It gives the reset commands, demo accounts, role-by-role talking points, report workflow, PDF export step, and fallback AI explanation.
-
-`package.json`
-
-Adds `npm run test:smoke` so Phase 13 checks can be run with one command after the dev server starts.
-
-## Database Commands
-
-Create the SQLite database, generate Prisma Client, and seed demo data:
+Initialize and seed the local database:
 
 ```bash
 npm run db:reset
 ```
 
-Check that the seed data exists:
+Start the dev server:
 
 ```bash
-npm run db:check
+npm run dev -- --port 3001
 ```
 
-Run the Phase 13 smoke test after the dev server is running:
-
-```bash
-npm run test:smoke
-```
-
-Open Prisma Studio to browse the data visually:
-
-```bash
-npm run db:studio
-```
-
-The local SQLite file is created at:
-
-```text
-prisma/dev.db
-```
-
-That database file is ignored by Git because it is generated local state.
-
-Uploaded classroom recordings are saved locally at:
-
-```text
-.uploads/observations/<observation-id>/
-```
-
-That upload directory is ignored by Git because recordings are generated local files.
-
-## Authentication Flow
-
-The Phase 3 login flow is:
-
-```text
-Login form
--> POST /api/auth/login
--> find user by email in SQLite
--> compare password with passwordHash
--> sign JWT session token
--> store token in HTTP-only cookie
--> redirect to role dashboard
-```
-
-The protected route flow is:
-
-```text
-User opens /dashboard/*
--> middleware checks session cookie
--> logged-out users go to /login
--> signed-in users stay in their own role route
--> server page loads fresh user data from Prisma
-```
-
-Role redirects:
-
-```text
-DISTRICT_ADMIN -> /dashboard/district
-SCHOOL_ADMIN   -> /dashboard/school
-TEACHER        -> /dashboard/teacher
-```
-
-Auth routes:
-
-- `GET /login`: public login page
-- `POST /api/auth/login`: create session
-- `POST /api/auth/logout`: clear session
-- `GET /api/auth/me`: inspect current session user
-- `GET /dashboard`: redirect hub
-- `GET /dashboard/district`: district admin dashboard
-- `GET /dashboard/school`: school admin dashboard
-- `GET /dashboard/teacher`: teacher dashboard
-- `GET /observations/new`: create observation page for school admins
-- `GET /observations/:id`: role-scoped observation report page
-- `GET /api/observations`: role-scoped observation list API
-- `POST /api/observations`: create observation API
-- `GET /api/observations/:id`: role-scoped observation read API
-- `PATCH /api/observations/:id`: school-admin update API
-- `POST /api/observations/:id/audio`: school-admin recording upload API
-- `POST /api/observations/:id/transcribe`: school-admin finalized transcription API
-- `POST /api/observations/:id/analyze`: school-admin structured insight API
-- `GET /api/observations/:id/report.pdf`: role-scoped PDF report export
-- `GET /api/observations/:id/transcript`: role-scoped transcript read API
-- `POST /api/observations/:id/transcript`: school-admin fallback transcript API
-- `POST /api/realtime/session`: school-admin OpenAI Realtime session API
-
-## Dashboard Data Flow
-
-The Phase 4 dashboard flow is:
-
-```text
-Protected dashboard page
--> requireCurrentUser(...)
--> role check
--> dashboard-data query helper
--> Prisma reads SQLite
--> helper computes metrics
--> dashboard components render prepared data
-```
-
-The dashboard pages are server components. That means they can query the database directly on the server without exposing database credentials or query logic to the browser.
-
-Dashboard responsibilities:
-
-- District dashboard: broad district-wide reporting.
-- School dashboard: operational observation management.
-- Teacher dashboard: personal feedback and growth tracking.
-
-Phase 4 does not create or edit observations. It only displays the seeded Phase 2 data through the protected Phase 3 auth system.
-
-## Observation Workflow
-
-The Phase 5 observation flow is:
-
-```text
-School admin dashboard
--> Create observation
--> choose teacher in the same school
--> enter title, subject, grade, and date
--> score every rubric category from 1 to 5
--> optionally write summary and feedback
--> POST /api/observations
--> Prisma creates Observation, EvaluationScore rows, and Feedback
--> redirect to /observations/:id
--> report page checks role scope before rendering
-```
-
-Phase 5 authorization rules:
-
-- District admins can read observations in their district.
-- School admins can create and update observations only for their school.
-- Teachers can read observations attached to their own user account.
-
-Phase 5 intentionally does not handle audio, transcription, AI analysis, PDF export, or notifications. Those are separate phases so each workflow is understandable before adding the next layer.
-
-## Transcript Storage Flow
-
-The Phase 6 transcript flow is:
-
-```text
-Observation report
--> report loads observation.transcription with ordered TranscriptSegment rows
--> transcript viewer renders speaker, time range, confidence, and text
--> if no transcript exists, school admins can create a demo fallback transcript
--> POST /api/observations/:id/transcript
--> Prisma creates Transcription and TranscriptSegment rows
--> observation status moves to TRANSCRIBED unless it was already FINALIZED or ANALYZED
--> report refreshes and shows the new transcript
-```
-
-Transcript storage responsibilities:
-
-- `Transcription` stores the full transcript text and provider/model metadata.
-- `TranscriptSegment` stores each speaker turn with start time, end time, speaker label, speaker type, confidence, and text.
-- Speaker diarization means separating speech by speaker. In Phase 6 this is simulated with seeded labels; later OpenAI transcription can produce similar segment records from uploaded classroom audio.
-
-Phase 6 still does not upload files or call OpenAI. It proves the transcript data shape and UI before adding real audio processing.
-
-## Audio Upload Flow
-
-The Phase 7 upload flow is:
-
-```text
-Observation report
--> school admin chooses a recording file
--> POST /api/observations/:id/audio
--> route checks the signed-in user and school scope
--> route validates file type and size
--> file is stored under .uploads/observations/:id/
--> AudioUpload metadata is created or replaced
--> Phase 8 tries to generate the final transcript from the upload
--> report refreshes with recording metadata and transcript segments
-```
-
-Accepted file types:
-
-- MP3: `audio/mpeg`, `audio/mp3`
-- WAV: `audio/wav`, `audio/x-wav`
-- MP4/M4A: `video/mp4`, `audio/mp4`, `audio/m4a`
-- WebM: `audio/webm`, `video/webm`
-
-Phase 7 stores files locally for the prototype. In production, this would move to object storage such as S3, Vercel Blob, or another durable file store.
-
-## Final Transcription Flow
-
-The Phase 8 finalized transcription flow is:
-
-```text
-Observation report
--> school admin uploads a recording or clicks Generate final transcript
--> POST /api/observations/:id/transcribe
--> route checks the signed-in user and school scope
--> route confirms the observation has AudioUpload metadata
--> if OPENAI_API_KEY exists and the local file is available, server sends multipart form-data to OpenAI
--> OpenAI returns diarized JSON with speaker segments
--> app replaces the current Transcription and TranscriptSegment rows
--> observation status moves to TRANSCRIBED unless it was already FINALIZED or ANALYZED
--> if OpenAI cannot run, app stores the deterministic fallback transcript
--> report refreshes with the stored transcript
-```
-
-OpenAI request shape:
-
-```text
-POST https://api.openai.com/v1/audio/transcriptions
-model = gpt-4o-transcribe-diarize
-response_format = diarized_json
-chunking_strategy = auto
-file = uploaded classroom recording
-```
-
-The implementation follows the official OpenAI Speech to text and transcription API docs:
-
-- [Speech to text guide](https://developers.openai.com/api/docs/guides/speech-to-text)
-- [Create transcription API reference](https://developers.openai.com/api/docs/api-reference/audio/createTranscription)
-- [GPT-4o Transcribe Diarize model page](https://developers.openai.com/api/docs/models/gpt-4o-transcribe-diarize)
-
-Phase 8 fallback cases:
-
-- `missing_api_key`: `.env.local` does not provide `OPENAI_API_KEY`.
-- `stored_upload_unavailable`: the database has upload metadata, but the local file is not available under `.uploads/`.
-- `invalid_audio_file`: the stored file does not match a supported MP3, WAV, MP4, M4A, or WebM container.
-- `openai_error`: OpenAI rejected the file or returned no usable diarized segments.
-
-Fallback does not mean the route failed. It means the prototype saved demo transcript rows so the report workflow remains usable.
-
-## AI Insight Generation Flow
-
-The Phase 9 insight flow is:
-
-```text
-Observation report
--> school admin clicks Generate AI insight
--> POST /api/observations/:id/analyze
--> route checks the signed-in user and school scope
--> route confirms the observation has a stored transcript
--> server builds transcript, rubric, and observation context
--> if OPENAI_API_KEY exists, server asks OpenAI for a structured JSON insight
--> Zod validates the parsed insight object
--> app upserts the Insight row
--> observation status moves to ANALYZED unless it was already FINALIZED
--> if OpenAI cannot run, app stores a deterministic fallback insight
--> report refreshes with summary, metrics, recommendations, sentiment, heatmap, and highlights
-```
-
-OpenAI request shape:
-
-```text
-POST https://api.openai.com/v1/responses
-model = OPENAI_INSIGHT_MODEL or gpt-4o-mini
-text.format.type = json_schema
-text.format.strict = true
-schema = JSON Schema generated from the Zod classroom insight schema
-```
-
-The implementation follows the official OpenAI Structured Outputs and Responses API docs:
-
-- [Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs)
-- [Create response API reference](https://developers.openai.com/api/reference/resources/responses/methods/create)
-
-Phase 9 fallback cases:
-
-- `missing_api_key`: `.env.local` does not provide `OPENAI_API_KEY`.
-- `openai_error`: OpenAI rejected the request, refused the request, or returned unusable structured text.
-
-The fallback insight uses transcript speaker timing and keyword counts to create the same data shape as the OpenAI path. That makes local demos reliable while preserving the contract the UI expects.
-
-## Insight Presentation Flow
-
-The Phase 10 insight UI flow is:
-
-```text
-Observation report
--> report loads the stored Insight row
--> readInsightView converts JSON fields into display-safe values
--> InsightPanel renders summary cards, charts, recommendation cards, sentiment, heatmap, and evidence
--> TranscriptViewer receives highlight timestamps
--> transcript rows that match AI evidence are labeled Insight highlight
-```
-
-Phase 10 does not create new AI data. It makes the Phase 9 data easier to scan, compare, and explain during a coaching conversation.
-
-## Realtime Transcription Flow
-
-The Phase 11 live transcription flow is:
-
-```text
-School admin opens an observation report
--> RealtimeRecorder requests microphone access
--> browser starts MediaRecorder for the final classroom recording
--> browser creates an RTCPeerConnection and SDP offer
--> POST /api/realtime/session receives the SDP offer
--> route validates auth and observation scope
--> route sends the offer plus transcription session config to OpenAI
--> browser receives OpenAI SDP answer and sets the remote description
--> transcript delta/completion events arrive on the data channel
--> user stops recording
--> final browser recording uploads to POST /api/observations/:id/audio
--> Phase 8 file transcription creates the durable saved transcript
-```
-
-Realtime transcription is intentionally a preview layer. The durable report transcript still comes from the finalized file transcription route because that path supports diarization and stores normalized `TranscriptSegment` rows.
-
-The implementation follows the official OpenAI Realtime docs:
-
-- [Realtime transcription guide](https://developers.openai.com/api/docs/guides/realtime-transcription)
-- [Realtime WebRTC guide](https://developers.openai.com/api/docs/guides/realtime-webrtc)
-
-## Reports And Notifications Flow
-
-The Phase 12 report/export flow is:
-
-```text
-User opens an authorized observation report
--> report page shows Export PDF
--> GET /api/observations/:id/report.pdf checks the signed-in user
--> route loads the same scoped observation report data
--> buildObservationReportPdf renders a downloadable PDF
-```
-
-The Phase 12 notification flow is:
-
-```text
-School admin creates or updates a report as FINALIZED
--> sendReportReadyNotifications loads teacher, observer, school, and district context
--> teacher receives an in-app REPORT_READY notification
--> teacher receives a simulated EmailLog row
--> district admins receive an in-app district report notification
--> DashboardShell displays recent notifications and simulated emails
-```
-
-The prototype does not send real email. `EmailLog` is the audit record that shows what would have been sent in production.
-
-## Phase 2 Data Model
-
-The main relationship chain is:
-
-```text
-District -> School -> User
-District -> School -> Observation
-Observation -> EvaluationScore
-Observation -> Feedback
-Observation -> AudioUpload
-Observation -> Transcription -> TranscriptSegment
-Observation -> Insight
-Observation -> Notification
-Observation -> EmailLog
-```
-
-Model meanings:
-
-- `District`: top-level organization.
-- `School`: belongs to one district.
-- `User`: district admin, school admin, or teacher.
-- `Observation`: the central classroom observation record.
-- `EvaluationScore`: rubric category score for one observation.
-- `Feedback`: written coaching feedback from an admin to a teacher.
-- `AudioUpload`: metadata for a classroom recording.
-- `Transcription`: full transcript text for an observation.
-- `TranscriptSegment`: timestamped speaker turn inside a transcript.
-- `Insight`: structured AI coaching output from transcript analysis.
-- `Notification`: in-app notification for future UI.
-- `EmailLog`: simulated email notification for future UI.
-
-## Full Build Path
-
-### Phase 1: Project Foundation
-
-Set up the app skeleton only.
-
-Build:
-
-- Next.js + TypeScript app
-- Tailwind styling
-- Basic folder structure
-- README with assignment goal
-- Home page that explains the product briefly
-- Local dev server working
-
-Understand:
-
-- What Next.js is doing
-- Where pages live
-- Where API routes live
-- How the app runs locally
-
-### Phase 2: Data Model
-
-Design the database before building screens.
-
-Build:
-
-- Prisma setup
-- SQLite database
-- Models for District, School, User, Observation, EvaluationScore, Feedback, AudioUpload, Transcription, TranscriptSegment, Insight, Notification, and EmailLog
-- Seed script with demo users and demo observations
-
-Understand:
-
-- What each table represents
-- How users connect to schools and districts
-- How observations connect teachers, admins, transcripts, and insights
-
-### Phase 3: Authentication
-
-Add login and role awareness.
-
-Build:
-
-- Login page
-- Seeded demo accounts for district admin, school admin, and teacher
-- Session cookie
-- Logout
-- Protected dashboard routes
-- Role-based redirects
-
-Understand:
-
-- How login works
-- What a session cookie is
-- How role-based access control works
-- Why different users see different pages
-
-### Phase 4: Dashboards
-
-Build the three main role experiences.
-
-Build:
-
-- District admin dashboard
-- School admin dashboard
-- Teacher dashboard
-- Shared navigation
-- Summary cards and tables
-
-Understand:
-
-- What each role needs
-- How dashboard data is queried
-- How UI changes based on role
-
-### Phase 5: Observation Workflow
-
-Build the core non-AI product flow.
-
-Build:
-
-- School admin creates an observation
-- Teacher selection
-- Subject, grade, and title fields
-- Evaluation category scoring
-- Written feedback
-- Teacher report view
-- Role-scoped observation read/update APIs
-
-Understand:
-
-- How forms submit data
-- How observations move through statuses
-- How scores and feedback attach to a report
-- How teachers see assigned reports
-
-### Phase 6: Transcript Storage
-
-Add the transcript system before real AI.
-
-Build:
-
-- Transcript database tables
-- Demo transcript viewer
-- Timestamped transcript segments
-- Speaker labels such as Teacher and Student
-- Manual seeded transcript fallback
-
-Understand:
-
-- What a transcript is in the database
-- Why transcript segments matter
-- How speaker diarization fits later
-
-### Phase 7: Audio Upload
-
-Add the classroom recording workflow.
-
-Build:
-
-- Upload MP3, WAV, MP4, M4A, or WebM files
-- Validate file type and size
-- Store upload metadata
-- Attach uploads to observations
-- Generate fallback transcript after upload
-
-Understand:
-
-- How file upload works
-- Why uploads need validation
-- How audio connects to transcription
-
-### Phase 8: AI Speech-To-Text
-
-Add real transcription once upload works.
-
-Build:
-
-- `OPENAI_API_KEY` environment setup
-- OpenAI finalized transcription API route
-- OpenAI diarized JSON parsing
-- Fallback transcript when no API key exists or OpenAI cannot process the recording
-- Generated transcript storage
-- Manual report-page transcript generation button
-
-Understand:
-
-- The client uploads audio, but the server sends the stored file to OpenAI
-- OpenAI returns diarized speaker segments
-- The app stores and displays the transcript
-- Why the fallback path keeps local demos reliable
-
-### Phase 9: AI Insights
-
-Turn transcripts into classroom coaching feedback.
-
-Build:
-
-- Zod insight schema
-- AI analysis API route
-- Generated lesson summary
-- Teacher/student talk ratio
-- Question count
-- Pacing notes
-- Sentiment analysis
-- Recommendations
-- Transcript highlights
-
-Understand:
-
-- Why structured output matters
-- How prompts shape analysis
-- How AI output becomes app data
-
-### Phase 10: Insights UI
-
-Make the main feature feel polished.
-
-Build:
-
-- Insight summary cards
-- Charts
-- Recommendation list
-- Highlighted transcript sections
-- Simple recommendation illustrations
-- Participation heatmap
-
-Understand:
-
-- How raw AI output becomes usable feedback
-- Which insights matter most to teachers
-- How product design supports coaching
-
-### Phase 11: Realtime Transcription
-
-Add the advanced live transcription layer.
-
-Build:
-
-- Browser microphone recorder
-- OpenAI Realtime session route
-- Live transcript display
-- Final recording upload after session ends
-
-Understand:
-
-- Difference between realtime transcription and file transcription
-- Why realtime is more complex
-- How WebRTC fits into the app
-
-### Phase 12: Reports And Notifications
-
-Finish the assignment features.
-
-Build:
-
-- Exportable PDF report
-- In-app notifications
-- Simulated email logs
-- Historical teacher growth chart
-
-Understand:
-
-- How reports summarize observations
-- How notifications fit the workflow
-- What would change in production
-
-### Phase 13: Testing And Demo Prep
-
-Make the project presentable and repeatable.
-
-Check:
-
-- Login as each role
-- Confirm signed-in users redirect away from the public overview
-- Confirm role dashboards cannot be cross-accessed
-- Confirm seeded observations are scoped by role
-- Confirm the seeded report has upload, transcript, insight, notification, and email data
-- View teacher report
-- Export PDF
-- Confirm the Realtime route fails safely when it cannot start a live call
-- README setup instructions
-- Demo walkthrough outline
-
-Run:
-
-```bash
-npm run test:smoke
-```
-
-Read:
-
-```text
-docs/demo-walkthrough.md
-```
+Open `http://localhost:3001`.
+
+Useful local commands:
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the Next.js dev server. |
+| `npm run build` | Build the Next.js app. |
+| `npm run start` | Start the production server after a build. |
+| `npm run lint` | Run ESLint. |
+| `npm run db:init` | Create local SQLite schema and generate Prisma Client. |
+| `npm run db:seed` | Seed deterministic demo data. |
+| `npm run db:reset` | Delete, recreate, and seed `prisma/dev.db`. |
+| `npm run db:check` | Print local database counts and a sample observation. |
+| `npm run test:smoke` | Run the local smoke script against `APP_BASE_URL`. |
+| `npm run db:studio` | Open Prisma Studio. |
 
 ## Demo Accounts
 
-These accounts will be created during the seed-data phase:
+All seeded users use password `password123`.
 
-| Role | Email | Password |
+| Role | Email |
+| --- | --- |
+| District Admin | `district@example.com` |
+| School Admin | `school@example.com` |
+| Teacher | `teacher@example.com` |
+
+The seed file includes additional demo users for broader dashboard data.
+
+## Codebase Map
+
+| Path | Purpose |
+| --- | --- |
+| `src/app` | App Router pages, layouts, and API route handlers. |
+| `src/app/page.tsx` | Public overview for signed-out users; signed-in users redirect by role. |
+| `src/app/login` | Login page and client login form. |
+| `src/app/dashboard` | Role dashboards and dashboard redirect hub. |
+| `src/app/observations` | Observation creation and report pages. |
+| `src/app/api` | Route handlers for auth, observations, transcripts, insights, PDFs, and Realtime. |
+| `src/components` | Shared UI and client components. |
+| `src/lib/db.ts` | Shared Prisma client helper. |
+| `src/lib/session.ts` | JWT signing, verification, cookie name, role labels, and dashboard paths. |
+| `src/lib/auth.ts` | Cookie-to-user helpers and server-side auth helpers. |
+| `src/lib/dashboard-data.ts` | Dashboard queries and view models. |
+| `src/lib/observations.ts` | Observation access checks and report query shape. |
+| `src/lib/audio-uploads.ts` | Upload validation, local storage, and path guard. |
+| `src/lib/transcripts.ts` | Transcript formatting, OpenAI transcription, fallback transcript generation, and persistence. |
+| `src/lib/insights.ts` | Zod insight schema, OpenAI insight generation, fallback generation, and persistence. |
+| `src/lib/pdf-report.ts` | Dependency-free PDF builder. |
+| `prisma/schema.prisma` | Database models, enums, relations, and uniqueness constraints. |
+| `prisma/seed.ts` | Deterministic demo dataset. |
+| `scripts/check-db.ts` | Local database sanity check. |
+| `scripts/smoke-test.ts` | Local end-to-end smoke test. |
+| `docs/demo-walkthrough.md` | Demo script for presenting the prototype. |
+
+## How To Read The Code
+
+Recommended order:
+
+1. `prisma/schema.prisma`
+   Read the enums and models first. This explains the domain vocabulary and relationships.
+
+2. `prisma/seed.ts`
+   Understand the demo district, schools, users, observations, transcripts, insights, notifications, and email logs.
+
+3. `src/lib/session.ts` and `src/lib/auth.ts`
+   Learn how sessions are signed, verified, and converted into current users.
+
+4. `middleware.ts`
+   See route-entry protection and role-specific dashboard redirects.
+
+5. `src/lib/dashboard-data.ts` and `src/app/dashboard/*/page.tsx`
+   Follow how role dashboards query and shape data.
+
+6. `src/lib/observations.ts` and `src/app/observations/[id]/page.tsx`
+   Follow report loading and record-level access checks.
+
+7. `src/lib/audio-uploads.ts`, `src/lib/transcripts.ts`, and `src/lib/insights.ts`
+   Read the recording, transcription, fallback, and AI insight workflow.
+
+8. `src/app/api/**/route.ts`
+   Review route handlers after you understand the shared helpers they call.
+
+## Data Model
+
+The Prisma schema is the database source of truth.
+
+Core models:
+
+| Model | Meaning |
+| --- | --- |
+| `District` | Top-level organization. Owns schools, users, and observations. |
+| `School` | Belongs to one district. Groups school admins, teachers, and observations. |
+| `User` | Login identity. Role determines access. `districtId` and `schoolId` determine scope. |
+| `Observation` | Central report/workflow record. Connects teacher, observer, school, district, scores, feedback, recording, transcript, insight, notifications, and email logs. |
+| `EvaluationScore` | One rubric score for one category on one observation. |
+| `Feedback` | Written admin feedback to a teacher for one observation. |
+| `AudioUpload` | Metadata for one current classroom recording. |
+| `Transcription` | Full transcript text and provider/model metadata. |
+| `TranscriptSegment` | Timestamped speaker turn under one transcription. |
+| `Insight` | Structured AI coaching output stored as JSON sections. |
+| `Notification` | In-app notification for one user, optionally tied to an observation. |
+| `EmailLog` | Simulated email send record for one user, optionally tied to an observation. |
+
+Key enums:
+
+- `Role`: `DISTRICT_ADMIN`, `SCHOOL_ADMIN`, `TEACHER`
+- `ObservationStatus`: `DRAFT`, `SCHEDULED`, `RECORDED`, `TRANSCRIBED`, `ANALYZED`, `FINALIZED`
+- `EvaluationCategory`: the six rubric categories shown in the observation form and report.
+- `SpeakerType`: `TEACHER`, `STUDENT`, `GROUP`, `UNKNOWN`
+
+## Auth And Role Scope
+
+Auth flow:
+
+1. User posts credentials to `POST /api/auth/login`.
+2. The route finds a seeded user by email and verifies the bcrypt password.
+3. `src/lib/session.ts` signs a JWT with `JWT_SECRET`.
+4. The response sets the HTTP-only `teacher_eval_session` cookie.
+5. Server components and API routes call auth helpers to load the current user from the cookie.
+
+Role scope:
+
+| Role | Main access |
+| --- | --- |
+| District Admin | Can view district-level dashboards and observations in their district. |
+| School Admin | Can view school-level dashboards, create observations for teachers in their school, update school observations, upload recordings, generate transcripts, and generate insights. |
+| Teacher | Can view teacher dashboards and reports attached to their own user account. |
+
+Middleware protects `/login`, `/dashboard`, `/dashboard/:path*`, and `/observations/:path*`. API routes still enforce auth and record-level access server-side; they do not rely on middleware alone.
+
+## Routes
+
+Page routes:
+
+| Route | Purpose |
+| --- | --- |
+| `/` | Public overview, or role redirect when signed in. |
+| `/login` | Login form and demo account buttons. |
+| `/dashboard` | Signed-in dashboard redirect hub. |
+| `/dashboard/district` | District admin dashboard. |
+| `/dashboard/school` | School admin dashboard. |
+| `/dashboard/teacher` | Teacher dashboard. |
+| `/observations/new` | School-admin-only observation creation page. |
+| `/observations/:id` | Shared role-scoped observation report. |
+
+## API Overview
+
+Auth:
+
+- `POST /api/auth/login`: sign in and set session cookie.
+- `POST /api/auth/logout`: clear session cookie.
+- `GET /api/auth/me`: return current signed-in user.
+
+Observations and reports:
+
+- `GET /api/observations`: list observations scoped to the signed-in role.
+- `POST /api/observations`: create an observation as a school admin.
+- `GET /api/observations/:id`: read one authorized observation report.
+- `PATCH /api/observations/:id`: update school-admin editable report fields.
+- `GET /api/observations/:id/report.pdf`: download a generated PDF.
+
+Recording, transcript, and AI:
+
+- `POST /api/observations/:id/audio`: upload one recording, store metadata, and attempt transcript generation.
+- `POST /api/observations/:id/transcribe`: regenerate the final transcript from an uploaded recording.
+- `GET /api/observations/:id/transcript`: read the stored transcript.
+- `POST /api/observations/:id/transcript`: create a deterministic fallback transcript.
+- `POST /api/observations/:id/analyze`: generate or regenerate structured insight.
+- `POST /api/realtime/session?observationId=:id`: create an OpenAI Realtime WebRTC transcription session.
+
+## AI Workflow
+
+File transcription:
+
+1. School admin uploads or records classroom media.
+2. The app validates file type, size, and basic container signature.
+3. The route stores upload metadata and local file bytes under `.uploads/`.
+4. If `OPENAI_API_KEY` exists and the stored file is available, the app asks OpenAI for a diarized transcript.
+5. The app normalizes speaker turns into `TranscriptSegment` rows.
+6. If OpenAI is unavailable or returns unusable output, the app stores deterministic fallback transcript rows.
+
+Realtime transcription:
+
+1. Browser requests microphone access.
+2. Browser starts a WebRTC session through `POST /api/realtime/session`.
+3. Live transcript text appears during the session.
+4. When stopped, the browser uploads the final recording through the existing upload route.
+5. The durable report transcript still comes from the finalized file transcription path.
+
+Insight generation:
+
+1. School admin clicks the report-page insight action.
+2. The server loads transcript, rubric scores, feedback, and observation context.
+3. If `OPENAI_API_KEY` exists, the server requests a structured JSON insight.
+4. Zod validates the output shape before persistence.
+5. If OpenAI is unavailable, deterministic fallback insight data is stored.
+
+## State And Storage
+
+| State | Current owner | Notes |
 | --- | --- | --- |
-| District Admin | `district@example.com` | `password123` |
-| School Admin | `school@example.com` | `password123` |
-| Teacher | `teacher@example.com` | `password123` |
+| Users, observations, scores, feedback, transcripts, insights, notifications, email logs | Prisma/SQLite | Local prototype database. |
+| Session state | HTTP-only JWT cookie | Cookie stores a small signed payload; database remains source of truth for current user fields. |
+| Uploaded recordings | `.uploads/` local folder | Ignored by Git. Production should use object storage. |
+| Seed data | `prisma/seed.ts` | Deterministic local baseline, not production data logic. |
+| PDF reports | Generated on request | Not stored. |
 
-## AI Fallback Strategy
+Do not commit:
 
-The app should work even without an OpenAI API key.
+- `.env` or `.env.local`
+- OpenAI API keys
+- JWT secrets
+- `prisma/*.db`
+- `.uploads/`
 
-- If `OPENAI_API_KEY` exists and the uploaded file is usable, Phase 8 uses real OpenAI transcription.
-- If `OPENAI_API_KEY` is missing, the local file is unavailable, or OpenAI cannot process the file, Phase 8 stores fallback transcript data.
-- If `OPENAI_API_KEY` exists and the transcript can be analyzed, Phase 9 uses OpenAI Structured Outputs for insight generation.
-- If `OPENAI_API_KEY` is missing or OpenAI cannot return usable structured output, Phase 9 stores fallback insight data.
+## Testing
 
-This makes local demos reliable while still allowing a real AI workflow when credentials are available.
+Current local checks:
+
+```bash
+npm run lint
+npm run build
+npm run db:check
+APP_BASE_URL=http://localhost:3001 npm run test:smoke
+```
+
+The smoke script verifies the main demo path: signed-out overview, invalid login rejection, seeded data readiness, role logins, `/api/auth/me`, role dashboards, signed-in `/` redirect, scoped observations API, seeded report access, cross-role dashboard redirect, PDF response, and Realtime guard behavior.
+
+Missing today:
+
+- Unit tests.
+- Component tests.
+- Formal integration tests with a test database.
+- Browser automation in CI.
+- Upload/transcription tests with real media fixtures.
+- OpenAI mocked contract tests.
+
+## Vercel And Production Readiness
+
+The app can use Vercel for the Next.js runtime, but the current persistence strategy is local-first.
+
+Before using Vercel for anything beyond a short-lived demo:
+
+1. Replace local SQLite with a hosted database or managed SQLite strategy.
+2. Add committed migrations and a production migration workflow.
+3. Replace `.uploads/` local file writes with object storage.
+4. Decide whether seeded auth is acceptable or replace it with a production auth provider.
+5. Add consent, retention, deletion, and audit policies for classroom recordings.
+6. Add real email delivery if notifications should leave the app.
+7. Add rate limits, abuse protection, observability, backups, and error monitoring.
+
+Deployment environment variables:
+
+| Variable | Required | Current use |
+| --- | --- | --- |
+| `DATABASE_URL` | Yes | Local value is `file:./dev.db`; production needs a durable database strategy and matching Prisma provider. |
+| `JWT_SECRET` | Required in production | Signs and verifies session JWTs. |
+| `OPENAI_API_KEY` | Optional | Enables OpenAI transcription, Realtime, and insight generation. |
+| `OPENAI_INSIGHT_MODEL` | Optional | Overrides insight model; defaults to `gpt-4o-mini`. |
+
+## Known Limitations
+
+- SQLite is local development only unless deliberately changed.
+- Local `.uploads/` storage is not production-safe.
+- There is no production auth provider.
+- There is no committed Prisma migration history.
+- Realtime transcription requires browser microphone permissions and `OPENAI_API_KEY`.
+- OpenAI calls are server-side but not queued or retried through background jobs.
+- Email delivery is simulated only.
+- There is no production audit log.
+- Consent, retention, deletion, and export workflows are not implemented.
+- There is no formal automated test suite beyond the smoke script.
+- Large observation, transcript, and notification lists are not paginated.

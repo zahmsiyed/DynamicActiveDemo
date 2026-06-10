@@ -47,34 +47,46 @@ export async function POST(request: Request) {
     );
   }
 
-  // Demo users are created by prisma/seed.ts.
-  const user = await getDb().user.findUnique({
-    where: {
-      email,
-    },
-  });
+  try {
+    // Demo users are created by prisma/seed.ts.
+    const user = await getDb().user.findUnique({
+      where: {
+        email,
+      },
+    });
 
-  // Use the same generic error for missing user and wrong password so the API
-  // does not reveal which emails exist.
-  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    // Use the same generic error for missing user and wrong password so the API
+    // does not reveal which emails exist.
+    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+      return NextResponse.json(
+        { error: "Invalid demo credentials." },
+        { status: 401 }
+      );
+    }
+
+    // Store only the small session payload in the signed token.
+    const sessionUser = toSessionUser(user);
+    const token = await signSessionToken(sessionUser);
+    const redirectPath = roleDashboardPath(sessionUser.role);
+
+    const response = NextResponse.json({
+      user: sessionUser,
+      redirectPath,
+    });
+
+    // HTTP-only means browser JavaScript cannot read the cookie directly.
+    response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions);
+
+    return response;
+  } catch (error) {
+    console.error("Login failed before a session could be created.", error);
+
     return NextResponse.json(
-      { error: "Invalid demo credentials." },
-      { status: 401 }
+      {
+        error:
+          "Login is temporarily unavailable. Check the deployment database configuration.",
+      },
+      { status: 500 }
     );
   }
-
-  // Store only the small session payload in the signed token.
-  const sessionUser = toSessionUser(user);
-  const token = await signSessionToken(sessionUser);
-  const redirectPath = roleDashboardPath(sessionUser.role);
-
-  const response = NextResponse.json({
-    user: sessionUser,
-    redirectPath,
-  });
-
-  // HTTP-only means browser JavaScript cannot read the cookie directly.
-  response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions);
-
-  return response;
 }
