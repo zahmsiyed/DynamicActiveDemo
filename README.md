@@ -134,6 +134,20 @@ npm run dev -- --port 3001
 
 Open `http://localhost:3001`.
 
+To start from a clean demo state before presenting or manually testing, run:
+
+```bash
+npm run db:reset
+npm run db:check
+npm run dev -- --port 3001
+```
+
+Leave the dev server running at `http://localhost:3001`. In a second terminal, run:
+
+```bash
+APP_BASE_URL=http://localhost:3001 npm run test:smoke
+```
+
 Useful local commands:
 
 | Command | Purpose |
@@ -185,7 +199,6 @@ The seed file includes additional demo users for broader dashboard data.
 | `prisma/seed.ts` | Deterministic demo dataset. |
 | `scripts/check-db.ts` | Local database sanity check. |
 | `scripts/smoke-test.ts` | Local end-to-end smoke test. |
-| `docs/demo-walkthrough.md` | Demo script for presenting the prototype. |
 
 ## How To Read The Code
 
