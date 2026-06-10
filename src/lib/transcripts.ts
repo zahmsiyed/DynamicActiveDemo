@@ -40,10 +40,10 @@ export const speakerTypeLabels: Record<SpeakerType, string> = {
 
 // Speaker styles make teacher/student turns easy to scan in the transcript.
 export const speakerTypeStyles: Record<SpeakerType, string> = {
-  TEACHER: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
-  STUDENT: "border-lime-300/30 bg-lime-300/10 text-lime-100",
-  GROUP: "border-violet-300/30 bg-violet-300/10 text-violet-100",
-  UNKNOWN: "border-slate-500/30 bg-slate-500/10 text-slate-200",
+  TEACHER: "border-sky-200 bg-sky-50 text-sky-700",
+  STUDENT: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  GROUP: "border-violet-200 bg-violet-50 text-violet-700",
+  UNKNOWN: "border-stone-200 bg-stone-50 text-stone-600",
 };
 
 type FallbackTranscriptSegment = {

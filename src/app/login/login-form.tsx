@@ -26,6 +26,18 @@ const demoAccounts = [
   },
 ];
 
+const productSignals = [
+  { label: "Reports ready", value: "6" },
+  { label: "AI insights", value: "2" },
+  { label: "Avg score", value: "3.6" },
+];
+
+const observationSignalRows = [
+  { colorClass: "bg-brand-coral", label: "Teacher talk", value: 62 },
+  { colorClass: "bg-brand-gold", label: "Student talk", value: 38 },
+  { colorClass: "bg-emerald-400", label: "Clarity", value: 84 },
+];
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -71,78 +83,151 @@ export function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-md rounded-lg border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-cyan-950/30">
-      <div>
-        <p className="text-sm font-medium uppercase tracking-[0.2em] text-cyan-300">
-          Phase 3 Auth
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
-          Sign in with a seeded account
+    <div className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-7xl items-center gap-8 lg:grid-cols-[1.05fr_0.95fr]">
+      <section className="py-8">
+        <div className="inline-flex rounded-full border border-brand-line bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-brand-coral">
+          Dynamic Active prototype
+        </div>
+
+        <h1 className="mt-6 max-w-3xl text-5xl font-semibold tracking-tight text-brand-ink sm:text-6xl">
+          Classroom evaluation that feels clear, human, and ready to use.
         </h1>
-        <p className="mt-3 text-sm leading-6 text-slate-300">
-          This phase checks the database user, verifies the hashed password,
-          signs a secure cookie, and redirects by role.
+
+        <p className="mt-5 max-w-2xl text-lg leading-8 text-brand-muted">
+          Sign in as a district admin, school admin, or teacher to review the
+          same seeded workflow through each role&apos;s lens.
         </p>
-      </div>
 
-      <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-        <label className="block">
-          <span className="text-sm font-medium text-slate-200">Email</span>
-          <input
-            className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-slate-50 outline-none transition focus:border-cyan-300"
-            type="email"
-            value={email}
-            autoComplete="email"
-            onChange={(event) => setEmail(event.target.value)}
-          />
-        </label>
-
-        <label className="block">
-          <span className="text-sm font-medium text-slate-200">Password</span>
-          <input
-            className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-slate-50 outline-none transition focus:border-cyan-300"
-            type="password"
-            value={password}
-            autoComplete="current-password"
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </label>
-
-        {error ? (
-          <p className="rounded-md border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-sm text-rose-100">
-            {error}
-          </p>
-        ) : null}
-
-        <button
-          className="w-full rounded-md bg-cyan-300 px-4 py-2 font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
-          type="submit"
-          disabled={isPending}
-        >
-          {isPending ? "Signing in..." : "Sign in"}
-        </button>
-      </form>
-
-      <div className="mt-6 border-t border-white/10 pt-5">
-        <p className="text-sm font-medium text-slate-200">Demo accounts</p>
-        <div className="mt-3 grid gap-2">
-          {demoAccounts.map((account) => (
-            <button
-              key={account.email}
-              type="button"
-              className="rounded-md border border-white/10 bg-slate-900/80 px-3 py-2 text-left text-sm transition hover:border-cyan-300/60"
-              onClick={() => {
-                setEmail(account.email);
-                setPassword(account.password);
-                setError("");
-              }}
+        <div className="mt-8 grid max-w-2xl gap-3 sm:grid-cols-3">
+          {productSignals.map((signal) => (
+            <div
+              key={signal.label}
+              className="rounded-[1.25rem] border border-brand-line bg-white p-4 shadow-sm"
             >
-              <span className="font-medium text-white">{account.role}</span>
-              <span className="mt-1 block text-slate-400">{account.email}</span>
-            </button>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-muted">
+                {signal.label}
+              </p>
+              <p className="mt-2 text-3xl font-semibold text-brand-ink">
+                {signal.value}
+              </p>
+            </div>
           ))}
         </div>
-      </div>
+
+        <div className="mt-8 max-w-2xl rounded-[2rem] border border-brand-line bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-brand-ink">
+                Observation signal
+              </p>
+              <p className="mt-1 text-sm text-brand-muted">
+                Seeded reports include scores, feedback, transcripts, and AI
+                recommendations.
+              </p>
+            </div>
+            <span className="rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-coral-dark">
+              Local demo
+            </span>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {observationSignalRows.map((row) => (
+              <div key={row.label}>
+                <div className="mb-1 flex justify-between text-xs text-brand-muted">
+                  <span>{row.label}</span>
+                  <span>{row.value}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-brand-soft">
+                  <div
+                    className={`h-2 rounded-full ${row.colorClass}`}
+                    style={{ width: `${row.value}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[2rem] border border-brand-line bg-brand-card p-6 shadow-sm sm:p-8">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-coral">
+            Secure demo login
+          </p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-brand-ink">
+            Sign in with a seeded account
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-brand-muted">
+            The app checks the database user, verifies the hashed password,
+            signs a secure cookie, and redirects by role.
+          </p>
+        </div>
+
+        <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+          <label className="block">
+            <span className="text-sm font-semibold text-brand-ink">Email</span>
+            <input
+              className="mt-2 w-full rounded-2xl border border-brand-line bg-white px-4 py-3 text-brand-ink outline-none transition placeholder:text-brand-muted/70 focus:border-brand-coral focus:ring-4 focus:ring-brand-coral/10"
+              type="email"
+              value={email}
+              autoComplete="email"
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-semibold text-brand-ink">
+              Password
+            </span>
+            <input
+              className="mt-2 w-full rounded-2xl border border-brand-line bg-white px-4 py-3 text-brand-ink outline-none transition placeholder:text-brand-muted/70 focus:border-brand-coral focus:ring-4 focus:ring-brand-coral/10"
+              type="password"
+              value={password}
+              autoComplete="current-password"
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </label>
+
+          {error ? (
+            <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {error}
+            </p>
+          ) : null}
+
+          <button
+            className="w-full rounded-full bg-brand-coral px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-brand-coral-dark disabled:cursor-not-allowed disabled:opacity-60"
+            type="submit"
+            disabled={isPending}
+          >
+            {isPending ? "Signing in..." : "Sign in"}
+          </button>
+        </form>
+
+        <div className="mt-7 border-t border-brand-line pt-5">
+          <p className="text-sm font-semibold text-brand-ink">Demo accounts</p>
+          <div className="mt-3 grid gap-2">
+            {demoAccounts.map((account) => (
+              <button
+                key={account.email}
+                type="button"
+                className="rounded-2xl border border-brand-line bg-white px-4 py-3 text-left text-sm transition hover:border-brand-coral hover:bg-brand-soft"
+                onClick={() => {
+                  setEmail(account.email);
+                  setPassword(account.password);
+                  setError("");
+                }}
+              >
+                <span className="font-semibold text-brand-ink">
+                  {account.role}
+                </span>
+                <span className="mt-1 block text-brand-muted">
+                  {account.email}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

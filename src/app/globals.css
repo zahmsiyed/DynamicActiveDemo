@@ -1,26 +1,40 @@
 /* Import Tailwind's generated reset, utility classes, and theme layers. */
 @import "tailwindcss";
 
-/* These CSS variables define the default light theme colors. */
+/* Dynamic Active-inspired app palette.
+   The reference site uses a white canvas, black headings, gray supporting
+   text, and a warm coral accent. These variables keep that system reusable. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fffaf5;
+  --foreground: #0c0407;
+  --brand-ink: #0c0407;
+  --brand-muted: #6f6f73;
+  --brand-soft: #fff4ec;
+  --brand-card: #ffffff;
+  --brand-line: #eadfd6;
+  --brand-coral: #fc362d;
+  --brand-coral-dark: #d62f27;
+  --brand-peach: #f47c50;
+  --brand-rose: #ef6f83;
+  --brand-gold: #f5c85f;
 }
 
 /* Tailwind v4 reads this block to expose our CSS variables as utilities. */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-muted: var(--brand-muted);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-card: var(--brand-card);
+  --color-brand-line: var(--brand-line);
+  --color-brand-coral: var(--brand-coral);
+  --color-brand-coral-dark: var(--brand-coral-dark);
+  --color-brand-peach: var(--brand-peach);
+  --color-brand-rose: var(--brand-rose);
+  --color-brand-gold: var(--brand-gold);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-/* The app respects the user's system dark-mode preference by default. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 /* Body styles apply the global background, text color, and font fallback. */
@@ -28,4 +42,12 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Form controls should inherit the product font instead of browser defaults. */
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }

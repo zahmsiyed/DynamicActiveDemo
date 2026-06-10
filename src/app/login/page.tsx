@@ -8,10 +8,10 @@ import { LoginForm } from "@/app/login/login-form";
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 py-10 text-slate-50">
+    <main className="min-h-screen bg-background px-6 py-8 text-brand-ink sm:px-8 lg:px-10">
       <Suspense
         fallback={
-          <div className="rounded-lg border border-white/10 bg-white/[0.04] p-6 text-slate-300">
+          <div className="mx-auto max-w-md rounded-[1.5rem] border border-brand-line bg-brand-card p-6 text-brand-muted shadow-sm">
             Loading login...
           </div>
         }

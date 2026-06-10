@@ -35,7 +35,7 @@ export default async function NewObservationPage() {
     >
       <div className="flex">
         <Link
-          className="rounded-md border border-white/10 px-3 py-2 text-sm text-slate-200 transition hover:border-cyan-300/60 hover:text-white"
+          className="rounded-full border border-brand-line bg-white px-4 py-2 text-sm font-semibold text-brand-ink transition hover:border-brand-coral hover:text-brand-coral"
           href="/dashboard/school"
         >
           Back to school dashboard

@@ -27,7 +27,7 @@ The most important feature is the AI classroom recording workflow:
 
 ## Current Status
 
-Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, and Phase 9 are implemented.
+Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, and Phase 10 are implemented.
 
 Phase 1 added:
 
@@ -113,6 +113,17 @@ Phase 9 added:
 - Insight storage in the existing `Insight` Prisma model
 - Report-page AI analysis button
 - Structured insight panel with summary, metrics, pacing note, sentiment, heatmap, recommendations, and highlights
+
+Phase 10 added:
+
+- A reusable insight view parser for safe JSON-to-UI conversion
+- Polished insight summary cards
+- Talk-balance and instructional score charts
+- Priority-styled coaching recommendations
+- Simple CSS-based recommendation illustrations
+- Participation heatmap display
+- Transcript evidence cards
+- Highlighted transcript rows that match AI evidence timestamps
 
 Realtime transcription, PDF export, and notifications do not exist yet. Those come later.
 
@@ -367,6 +378,28 @@ The report page now shows a Phase 9 AI analysis workflow section and renders the
 `package.json`
 
 Adds `zod` so server code can validate the generated insight object before it is stored.
+
+## Phase 10 Files
+
+`src/lib/insight-view.ts`
+
+Shared view-model helper. This file turns raw Prisma JSON fields from `Insight` into typed display data for the report UI.
+
+`src/components/insight-panel.tsx`
+
+The structured insight panel now renders summary cards, simple charts, recommendation illustrations, priority labels, sentiment, heatmap rows, and evidence cards.
+
+`src/components/transcript-viewer.tsx`
+
+The transcript viewer now accepts insight highlight timestamps and marks matching transcript rows as `Insight highlight`.
+
+`src/app/observations/[id]/page.tsx`
+
+The report page now creates one parsed insight view and shares it with both the insight panel and transcript viewer.
+
+`src/app/page.tsx`
+
+The homepage now labels the prototype as Phase 10 and reflects the polished insight report layer.
 
 ## Database Commands
 
@@ -638,6 +671,21 @@ Phase 9 fallback cases:
 - `openai_error`: OpenAI rejected the request, refused the request, or returned unusable structured text.
 
 The fallback insight uses transcript speaker timing and keyword counts to create the same data shape as the OpenAI path. That makes local demos reliable while preserving the contract the UI expects.
+
+## Insight Presentation Flow
+
+The Phase 10 insight UI flow is:
+
+```text
+Observation report
+-> report loads the stored Insight row
+-> readInsightView converts JSON fields into display-safe values
+-> InsightPanel renders summary cards, charts, recommendation cards, sentiment, heatmap, and evidence
+-> TranscriptViewer receives highlight timestamps
+-> transcript rows that match AI evidence are labeled Insight highlight
+```
+
+Phase 10 does not create new AI data. It makes the Phase 9 data easier to scan, compare, and explain during a coaching conversation.
 
 ## Phase 2 Data Model
 

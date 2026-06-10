@@ -43,7 +43,7 @@ export function TranscriptFallbackButton({
   return (
     <div className="mt-4">
       <button
-        className="rounded-md bg-cyan-300 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-full bg-brand-coral px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-coral-dark disabled:cursor-not-allowed disabled:opacity-60"
         disabled={isPending}
         onClick={handleCreateTranscript}
         type="button"
@@ -52,7 +52,7 @@ export function TranscriptFallbackButton({
       </button>
 
       {error ? (
-        <p className="mt-3 rounded-md border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-sm text-rose-100">
+        <p className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {error}
         </p>
       ) : null}

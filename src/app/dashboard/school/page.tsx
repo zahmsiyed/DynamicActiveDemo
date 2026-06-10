@@ -26,7 +26,7 @@ export default async function SchoolDashboardPage() {
     >
       <div className="flex">
         <Link
-          className="rounded-md bg-cyan-300 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
+          className="rounded-full bg-brand-coral px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-coral-dark"
           href="/observations/new"
         >
           Create observation

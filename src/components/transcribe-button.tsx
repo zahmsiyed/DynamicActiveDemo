@@ -85,7 +85,7 @@ export function TranscribeButton({
   return (
     <div className="mt-4">
       <button
-        className="rounded-md bg-cyan-300 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-full bg-brand-coral px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-coral-dark disabled:cursor-not-allowed disabled:opacity-60"
         disabled={isPending}
         onClick={handleTranscribe}
         type="button"
@@ -98,13 +98,13 @@ export function TranscribeButton({
       </button>
 
       {message ? (
-        <p className="mt-3 rounded-md border border-lime-300/30 bg-lime-300/10 px-3 py-2 text-sm text-lime-100">
+        <p className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           {message}
         </p>
       ) : null}
 
       {error ? (
-        <p className="mt-3 rounded-md border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-sm text-rose-100">
+        <p className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {error}
         </p>
       ) : null}

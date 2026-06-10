@@ -25,8 +25,18 @@ import {
   evaluationCategoryDescriptions,
   evaluationCategoryLabels,
 } from "@/lib/evaluation";
+import { readInsightView } from "@/lib/insight-view";
 import { getObservationReportForUser } from "@/lib/observations";
 import { roleDashboardPath } from "@/lib/session";
+
+const panelClass =
+  "rounded-[1.5rem] border border-brand-line bg-brand-card p-5 shadow-sm";
+const compactCardClass =
+  "rounded-[1.25rem] border border-brand-line bg-white p-4";
+const secondaryLinkClass =
+  "rounded-full border border-brand-line bg-white px-4 py-2 text-sm font-semibold text-brand-ink transition hover:border-brand-coral hover:text-brand-coral";
+const primaryLinkClass =
+  "rounded-full bg-brand-coral px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-coral-dark";
 
 type ObservationReportPageProps = {
   params: Promise<{
@@ -65,6 +75,7 @@ export default async function ObservationReportPage({
   const orderedScores = evaluationCategories
     .map((category) => scoresByCategory.get(category))
     .filter((score): score is NonNullable<typeof score> => Boolean(score));
+  const insightView = readInsightView(observation.insight);
   const maxUploadSizeLabel = formatUploadSize(maxAudioUploadBytes);
 
   return (
@@ -76,7 +87,7 @@ export default async function ObservationReportPage({
     >
       <div className="flex flex-wrap gap-2">
         <Link
-          className="rounded-md border border-white/10 px-3 py-2 text-sm text-slate-200 transition hover:border-cyan-300/60 hover:text-white"
+          className={secondaryLinkClass}
           href={dashboardPath}
         >
           Back to dashboard
@@ -84,7 +95,7 @@ export default async function ObservationReportPage({
 
         {user.role === "SCHOOL_ADMIN" ? (
           <Link
-            className="rounded-md border border-cyan-300/30 bg-cyan-300/10 px-3 py-2 text-sm text-cyan-100 transition hover:bg-cyan-300/20"
+            className={primaryLinkClass}
             href="/observations/new"
           >
             Create another observation
@@ -92,11 +103,13 @@ export default async function ObservationReportPage({
         ) : null}
       </div>
 
-      <section className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
+      <section className={panelClass}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-white">Report summary</h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+            <h2 className="text-lg font-semibold text-brand-ink">
+              Report summary
+            </h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-brand-muted">
               {observation.summary ??
                 "No narrative summary has been added to this observation yet."}
             </p>
@@ -104,89 +117,89 @@ export default async function ObservationReportPage({
 
           <div className="flex items-center gap-3">
             <StatusBadge status={observation.status} />
-            <span className="rounded-md border border-white/10 bg-slate-950 px-3 py-2 font-mono text-sm text-white">
+            <span className="rounded-full border border-brand-line bg-brand-soft px-3 py-2 font-mono text-sm font-semibold text-brand-ink">
               {reportAverage.toFixed(1)} avg
             </span>
           </div>
         </div>
 
         <dl className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-md border border-white/10 bg-slate-900/70 p-3">
-            <dt className="text-xs uppercase tracking-[0.16em] text-slate-500">
+          <div className={compactCardClass}>
+            <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-muted">
               Teacher
             </dt>
-            <dd className="mt-2 text-sm font-medium text-white">
+            <dd className="mt-2 text-sm font-semibold text-brand-ink">
               {observation.teacher.name}
             </dd>
-            <dd className="mt-1 text-xs text-slate-400">
+            <dd className="mt-1 text-xs text-brand-muted">
               {observation.teacher.title ?? observation.teacher.email}
             </dd>
           </div>
 
-          <div className="rounded-md border border-white/10 bg-slate-900/70 p-3">
-            <dt className="text-xs uppercase tracking-[0.16em] text-slate-500">
+          <div className={compactCardClass}>
+            <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-muted">
               Observer
             </dt>
-            <dd className="mt-2 text-sm font-medium text-white">
+            <dd className="mt-2 text-sm font-semibold text-brand-ink">
               {observation.observer.name}
             </dd>
-            <dd className="mt-1 text-xs text-slate-400">
+            <dd className="mt-1 text-xs text-brand-muted">
               {observation.observer.title ?? observation.observer.email}
             </dd>
           </div>
 
-          <div className="rounded-md border border-white/10 bg-slate-900/70 p-3">
-            <dt className="text-xs uppercase tracking-[0.16em] text-slate-500">
+          <div className={compactCardClass}>
+            <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-muted">
               Class
             </dt>
-            <dd className="mt-2 text-sm font-medium text-white">
+            <dd className="mt-2 text-sm font-semibold text-brand-ink">
               {observation.subject}
             </dd>
-            <dd className="mt-1 text-xs text-slate-400">
+            <dd className="mt-1 text-xs text-brand-muted">
               Grade {observation.gradeLevel}
             </dd>
           </div>
 
-          <div className="rounded-md border border-white/10 bg-slate-900/70 p-3">
-            <dt className="text-xs uppercase tracking-[0.16em] text-slate-500">
+          <div className={compactCardClass}>
+            <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-muted">
               Date
             </dt>
-            <dd className="mt-2 text-sm font-medium text-white">
+            <dd className="mt-2 text-sm font-semibold text-brand-ink">
               {formatDate(observedDate)}
             </dd>
-            <dd className="mt-1 text-xs text-slate-400">
+            <dd className="mt-1 text-xs text-brand-muted">
               {observation.school.name}
             </dd>
           </div>
         </dl>
       </section>
 
-      <section className="rounded-lg border border-white/10 bg-white/[0.03]">
-        <div className="border-b border-white/10 px-4 py-3">
-          <h2 className="font-semibold text-white">Rubric scores</h2>
+      <section className="rounded-[1.5rem] border border-brand-line bg-brand-card shadow-sm">
+        <div className="border-b border-brand-line px-5 py-4">
+          <h2 className="font-semibold text-brand-ink">Rubric scores</h2>
         </div>
 
-        <div className="grid gap-3 p-4 lg:grid-cols-2">
+        <div className="grid gap-3 p-5 lg:grid-cols-2">
           {orderedScores.map((score) => (
             <article
               key={score.category}
-              className="rounded-md border border-white/10 bg-slate-900/70 p-4"
+              className="rounded-[1.25rem] border border-brand-line bg-white p-4"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h3 className="font-medium text-white">
+                  <h3 className="font-semibold text-brand-ink">
                     {evaluationCategoryLabels[score.category]}
                   </h3>
-                  <p className="mt-1 text-sm leading-6 text-slate-400">
+                  <p className="mt-1 text-sm leading-6 text-brand-muted">
                     {evaluationCategoryDescriptions[score.category]}
                   </p>
                 </div>
-                <span className="rounded-md bg-cyan-300 px-2.5 py-1 font-mono text-sm font-semibold text-slate-950">
+                <span className="rounded-full bg-brand-coral px-2.5 py-1 font-mono text-sm font-semibold text-white">
                   {score.score}/5
                 </span>
               </div>
 
-              <p className="mt-3 text-sm leading-6 text-slate-300">
+              <p className="mt-3 text-sm leading-6 text-brand-muted">
                 {score.note || "No evidence note was added for this category."}
               </p>
             </article>
@@ -195,38 +208,38 @@ export default async function ObservationReportPage({
       </section>
 
       <div className="grid gap-5 lg:grid-cols-[1fr_0.8fr]">
-        <section className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
-          <h2 className="font-semibold text-white">Written feedback</h2>
+        <section className={panelClass}>
+          <h2 className="font-semibold text-brand-ink">Written feedback</h2>
           <div className="mt-4 space-y-3">
             {observation.feedback.length ? (
               observation.feedback.map((feedback) => (
                 <article
                   key={feedback.id}
-                  className="rounded-md border border-white/10 bg-slate-900/70 p-3"
+                  className="rounded-[1.25rem] border border-brand-line bg-white p-4"
                 >
-                  <p className="text-sm leading-6 text-slate-300">
+                  <p className="text-sm leading-6 text-brand-muted">
                     {feedback.body}
                   </p>
-                  <p className="mt-3 text-xs text-slate-500">
+                  <p className="mt-3 text-xs text-brand-muted">
                     {feedback.author.name}
                     {feedback.author.title ? `, ${feedback.author.title}` : ""}
                   </p>
                 </article>
               ))
             ) : (
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-brand-muted">
                 Feedback has not been written for this observation yet.
               </p>
             )}
           </div>
         </section>
 
-        <section className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
-          <h2 className="font-semibold text-white">Workflow readiness</h2>
+        <section className={panelClass}>
+          <h2 className="font-semibold text-brand-ink">Workflow readiness</h2>
           <div className="mt-4 space-y-3 text-sm">
-            <div className="rounded-md bg-slate-900/70 p-3">
-              <p className="font-medium text-white">Audio upload</p>
-              <p className="mt-1 text-slate-400">
+            <div className="rounded-[1.25rem] border border-brand-line bg-white p-4">
+              <p className="font-semibold text-brand-ink">Audio upload</p>
+              <p className="mt-1 text-brand-muted">
                 {observation.audioUpload
                   ? `${observation.audioUpload.fileName} (${formatUploadSize(
                       observation.audioUpload.sizeBytes
@@ -235,18 +248,18 @@ export default async function ObservationReportPage({
               </p>
             </div>
 
-            <div className="rounded-md bg-slate-900/70 p-3">
-              <p className="font-medium text-white">Transcript</p>
-              <p className="mt-1 text-slate-400">
+            <div className="rounded-[1.25rem] border border-brand-line bg-white p-4">
+              <p className="font-semibold text-brand-ink">Transcript</p>
+              <p className="mt-1 text-brand-muted">
                 {observation.transcription
                   ? `${observation.transcription.segments.length} timestamped segments stored.`
                   : "No transcript stored yet."}
               </p>
             </div>
 
-            <div className="rounded-md bg-slate-900/70 p-3">
-              <p className="font-medium text-white">AI insight</p>
-              <p className="mt-1 text-slate-400">
+            <div className="rounded-[1.25rem] border border-brand-line bg-white p-4">
+              <p className="font-semibold text-brand-ink">AI insight</p>
+              <p className="mt-1 text-brand-muted">
                 {observation.insight
                   ? `Insight available: ${observation.insight.illustrationKey}.`
                   : "No AI insight generated yet."}
@@ -256,11 +269,11 @@ export default async function ObservationReportPage({
         </section>
       </div>
 
-      <section className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+      <section className={panelClass}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h2 className="font-semibold text-white">Recording upload</h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+            <h2 className="font-semibold text-brand-ink">Recording upload</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-brand-muted">
               Attach the classroom recording to this observation. Phase 8 sends
               the stored file to OpenAI for diarized speech-to-text when an API
               key is available, then falls back to demo transcript data when the
@@ -269,11 +282,11 @@ export default async function ObservationReportPage({
           </div>
 
           {observation.audioUpload ? (
-            <span className="rounded-full border border-lime-300/30 bg-lime-300/10 px-3 py-1 text-xs font-medium text-lime-100">
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
               Recording attached
             </span>
           ) : (
-            <span className="rounded-full border border-slate-500/30 bg-slate-500/10 px-3 py-1 text-xs font-medium text-slate-200">
+            <span className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-xs font-semibold text-stone-600">
               No recording
             </span>
           )}
@@ -281,38 +294,38 @@ export default async function ObservationReportPage({
 
         {observation.audioUpload ? (
           <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-md border border-white/10 bg-slate-900/70 p-3">
-              <dt className="text-xs uppercase tracking-[0.16em] text-slate-500">
+            <div className={compactCardClass}>
+              <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-muted">
                 File
               </dt>
-              <dd className="mt-2 break-words text-sm font-medium text-white">
+              <dd className="mt-2 break-words text-sm font-semibold text-brand-ink">
                 {observation.audioUpload.fileName}
               </dd>
             </div>
 
-            <div className="rounded-md border border-white/10 bg-slate-900/70 p-3">
-              <dt className="text-xs uppercase tracking-[0.16em] text-slate-500">
+            <div className={compactCardClass}>
+              <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-muted">
                 Type
               </dt>
-              <dd className="mt-2 font-mono text-sm text-white">
+              <dd className="mt-2 font-mono text-sm text-brand-ink">
                 {observation.audioUpload.mimeType}
               </dd>
             </div>
 
-            <div className="rounded-md border border-white/10 bg-slate-900/70 p-3">
-              <dt className="text-xs uppercase tracking-[0.16em] text-slate-500">
+            <div className={compactCardClass}>
+              <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-muted">
                 Size
               </dt>
-              <dd className="mt-2 font-mono text-sm text-white">
+              <dd className="mt-2 font-mono text-sm text-brand-ink">
                 {formatUploadSize(observation.audioUpload.sizeBytes)}
               </dd>
             </div>
 
-            <div className="rounded-md border border-white/10 bg-slate-900/70 p-3">
-              <dt className="text-xs uppercase tracking-[0.16em] text-slate-500">
+            <div className={compactCardClass}>
+              <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-muted">
                 Storage
               </dt>
-              <dd className="mt-2 break-words font-mono text-xs text-slate-300">
+              <dd className="mt-2 break-words font-mono text-xs text-brand-muted">
                 {observation.audioUpload.storagePath ?? "metadata only"}
               </dd>
             </div>
@@ -339,22 +352,23 @@ export default async function ObservationReportPage({
         canCreateFallback={
           user.role === "SCHOOL_ADMIN" && !observation.audioUpload
         }
+        highlightedStartMs={insightView?.highlightStartMs ?? []}
         observationId={observation.id}
         transcription={observation.transcription}
       />
 
-      <section className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+      <section className={panelClass}>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h2 className="font-semibold text-white">AI analysis</h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+            <h2 className="font-semibold text-brand-ink">AI analysis</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-brand-muted">
               Phase 9 turns the stored transcript into structured coaching data:
               summary, metrics, sentiment, recommendations, heatmap, and
               transcript highlights.
             </p>
           </div>
 
-          <span className="w-fit rounded-full border border-white/10 bg-slate-900/70 px-3 py-1 text-xs font-medium text-slate-200">
+          <span className="w-fit rounded-full border border-brand-line bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-coral-dark">
             {observation.transcription ? "Transcript ready" : "Needs transcript"}
           </span>
         </div>
@@ -367,7 +381,7 @@ export default async function ObservationReportPage({
         ) : null}
       </section>
 
-      <InsightPanel insight={observation.insight} />
+      <InsightPanel insight={insightView} />
     </DashboardShell>
   );
 }

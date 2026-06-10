@@ -21,20 +21,53 @@ type StatusCount = {
   count: number;
 };
 
+const metricAccentClasses = [
+  "from-brand-coral to-brand-peach",
+  "from-brand-peach to-brand-gold",
+  "from-brand-rose to-brand-coral",
+  "from-sky-400 to-cyan-300",
+  "from-emerald-400 to-lime-300",
+  "from-violet-400 to-brand-rose",
+];
+
+const panelClass =
+  "rounded-[1.5rem] border border-brand-line bg-brand-card shadow-sm";
+
+function SignalPill({ active, label }: { active: boolean; label: string }) {
+  return (
+    <span
+      className={
+        active
+          ? "rounded-full border border-brand-coral/20 bg-brand-soft px-2.5 py-1 text-brand-coral-dark"
+          : "rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1 text-stone-500"
+      }
+    >
+      {label}
+    </span>
+  );
+}
+
 // MetricGrid is used at the top of every dashboard for fast scanning.
 export function MetricGrid({ metrics }: { metrics: Metric[] }) {
   return (
-    <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-      {metrics.map((metric) => (
+    <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      {metrics.map((metric, index) => (
         <div
           key={metric.label}
-          className="rounded-lg border border-white/10 bg-white/[0.04] p-4"
+          className="rounded-[1.35rem] border border-brand-line bg-brand-card p-4 shadow-sm"
         >
-          <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+          <div
+            className={`h-1.5 w-12 rounded-full bg-gradient-to-r ${
+              metricAccentClasses[index % metricAccentClasses.length]
+            }`}
+          />
+          <p className="mt-4 text-xs font-semibold uppercase tracking-[0.16em] text-brand-muted">
             {metric.label}
           </p>
-          <p className="mt-3 text-2xl font-semibold text-white">{metric.value}</p>
-          <p className="mt-1 text-xs text-slate-400">{metric.detail}</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-brand-ink">
+            {metric.value}
+          </p>
+          <p className="mt-1 text-xs leading-5 text-brand-muted">{metric.detail}</p>
         </div>
       ))}
     </section>
@@ -45,7 +78,7 @@ export function MetricGrid({ metrics }: { metrics: Metric[] }) {
 export function StatusBadge({ status }: { status: DashboardObservation["status"] }) {
   return (
     <span
-      className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${statusStyles[status]}`}
+      className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${statusStyles[status]}`}
     >
       {statusLabels[status]}
     </span>
@@ -64,16 +97,16 @@ export function ObservationTable({
   emptyMessage: string;
 }) {
   return (
-    <section className="rounded-lg border border-white/10 bg-white/[0.03]">
-      <div className="border-b border-white/10 px-4 py-3">
-        <h2 className="font-semibold text-white">{title}</h2>
+    <section className={panelClass}>
+      <div className="border-b border-brand-line px-5 py-4">
+        <h2 className="font-semibold text-brand-ink">{title}</h2>
       </div>
 
       {observations.length ? (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[860px] border-collapse text-left text-sm">
-            <thead className="text-xs uppercase tracking-[0.16em] text-slate-400">
-              <tr className="border-b border-white/10">
+            <thead className="bg-brand-soft/60 text-xs uppercase tracking-[0.16em] text-brand-muted">
+              <tr className="border-b border-brand-line">
                 <th className="px-4 py-3 font-medium">Observation</th>
                 <th className="px-4 py-3 font-medium">Teacher</th>
                 <th className="px-4 py-3 font-medium">School</th>
@@ -86,46 +119,50 @@ export function ObservationTable({
             </thead>
             <tbody>
               {observations.map((observation) => (
-                <tr key={observation.id} className="border-b border-white/5">
+                <tr
+                  key={observation.id}
+                  className="border-b border-brand-line/70 transition hover:bg-brand-soft/45"
+                >
                   <td className="px-4 py-4">
                     <Link
-                      className="font-medium text-white transition hover:text-cyan-200"
+                      className="font-semibold text-brand-ink transition hover:text-brand-coral"
                       href={`/observations/${observation.id}`}
                     >
                       {observation.title}
                     </Link>
-                    <p className="mt-1 text-xs text-slate-400">
+                    <p className="mt-1 text-xs text-brand-muted">
                       {observation.subject} | Grade {observation.gradeLevel} |
                       Scheduled {observation.scheduledDate}
                     </p>
                   </td>
-                  <td className="px-4 py-4 text-slate-200">
+                  <td className="px-4 py-4 text-brand-ink">
                     {observation.teacherName}
                   </td>
-                  <td className="px-4 py-4 text-slate-300">
+                  <td className="px-4 py-4 text-brand-muted">
                     {observation.schoolName}
                   </td>
                   <td className="px-4 py-4">
                     <StatusBadge status={observation.status} />
                   </td>
-                  <td className="px-4 py-4 font-mono text-slate-100">
+                  <td className="px-4 py-4 font-mono text-brand-ink">
                     {observation.averageScore.toFixed(1)}
                   </td>
-                  <td className="px-4 py-4 text-xs text-slate-300">
-                    <span>{observation.hasAudio ? "Audio" : "No audio"}</span>
-                    <span className="mx-2 text-slate-600">/</span>
-                    <span>
-                      {observation.hasTranscript ? "Transcript" : "No transcript"}
-                    </span>
-                    <span className="mx-2 text-slate-600">/</span>
-                    <span>{observation.hasInsight ? "Insight" : "No insight"}</span>
+                  <td className="px-4 py-4 text-xs">
+                    <div className="flex flex-wrap gap-1.5">
+                      <SignalPill active={observation.hasAudio} label="Audio" />
+                      <SignalPill
+                        active={observation.hasTranscript}
+                        label="Transcript"
+                      />
+                      <SignalPill active={observation.hasInsight} label="Insight" />
+                    </div>
                   </td>
-                  <td className="px-4 py-4 text-slate-400">
+                  <td className="px-4 py-4 text-brand-muted">
                     {observation.updatedDate}
                   </td>
                   <td className="px-4 py-4">
                     <Link
-                      className="rounded-md border border-cyan-300/30 bg-cyan-300/10 px-3 py-2 text-xs font-medium text-cyan-100 transition hover:bg-cyan-300/20"
+                      className="rounded-full border border-brand-coral bg-brand-coral px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-coral-dark"
                       href={`/observations/${observation.id}`}
                     >
                       Open
@@ -137,7 +174,7 @@ export function ObservationTable({
           </table>
         </div>
       ) : (
-        <p className="px-4 py-6 text-sm text-slate-400">{emptyMessage}</p>
+        <p className="px-5 py-6 text-sm text-brand-muted">{emptyMessage}</p>
       )}
     </section>
   );
@@ -148,21 +185,24 @@ export function StatusSummary({ counts }: { counts: StatusCount[] }) {
   const total = counts.reduce((sum, item) => sum + item.count, 0);
 
   return (
-    <section className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
-      <h2 className="font-semibold text-white">Observation status tracking</h2>
-      <div className="mt-4 space-y-3">
+    <section className={`${panelClass} p-5`}>
+      <h2 className="font-semibold text-brand-ink">Observation status tracking</h2>
+      <p className="mt-2 text-sm leading-6 text-brand-muted">
+        A quick read on where reports sit in the coaching workflow.
+      </p>
+      <div className="mt-5 space-y-4">
         {counts.map((item) => {
           const percent = total ? Math.round((item.count / total) * 100) : 0;
 
           return (
             <div key={item.label}>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-300">{item.label}</span>
-                <span className="font-mono text-slate-400">{item.count}</span>
+                <span className="font-medium text-brand-ink">{item.label}</span>
+                <span className="font-mono text-brand-muted">{item.count}</span>
               </div>
-              <div className="mt-2 h-2 rounded-full bg-slate-800">
+              <div className="mt-2 h-2 rounded-full bg-brand-soft">
                 <div
-                  className="h-2 rounded-full bg-cyan-300"
+                  className="h-2 rounded-full bg-brand-coral"
                   style={{ width: `${percent}%` }}
                 />
               </div>
@@ -187,20 +227,20 @@ export function SchoolRows({
   }[];
 }) {
   return (
-    <section className="rounded-lg border border-white/10 bg-white/[0.03]">
-      <div className="border-b border-white/10 px-4 py-3">
-        <h2 className="font-semibold text-white">Schools in district</h2>
+    <section className={panelClass}>
+      <div className="border-b border-brand-line px-5 py-4">
+        <h2 className="font-semibold text-brand-ink">Schools in district</h2>
       </div>
-      <div className="divide-y divide-white/10">
+      <div className="divide-y divide-brand-line">
         {schools.map((school) => (
           <div
             key={school.id}
-            className="grid gap-3 px-4 py-4 text-sm sm:grid-cols-[1fr_auto_auto_auto]"
+            className="grid gap-3 px-5 py-4 text-sm sm:grid-cols-[1fr_auto_auto_auto]"
           >
-            <p className="font-medium text-white">{school.name}</p>
-            <p className="text-slate-300">{school.teachers} teachers</p>
-            <p className="text-slate-300">{school.admins} admins</p>
-            <p className="text-slate-300">{school.observations} observations</p>
+            <p className="font-semibold text-brand-ink">{school.name}</p>
+            <p className="text-brand-muted">{school.teachers} teachers</p>
+            <p className="text-brand-muted">{school.admins} admins</p>
+            <p className="text-brand-muted">{school.observations} observations</p>
           </div>
         ))}
       </div>
@@ -222,25 +262,27 @@ export function TeacherRows({
   }[];
 }) {
   return (
-    <section className="rounded-lg border border-white/10 bg-white/[0.03]">
-      <div className="border-b border-white/10 px-4 py-3">
-        <h2 className="font-semibold text-white">Teacher performance snapshot</h2>
+    <section className={panelClass}>
+      <div className="border-b border-brand-line px-5 py-4">
+        <h2 className="font-semibold text-brand-ink">
+          Teacher performance snapshot
+        </h2>
       </div>
-      <div className="divide-y divide-white/10">
+      <div className="divide-y divide-brand-line">
         {teachers.map((teacher) => (
           <div
             key={teacher.id}
-            className="grid gap-3 px-4 py-4 text-sm md:grid-cols-[1fr_auto_auto_auto]"
+            className="grid gap-3 px-5 py-4 text-sm md:grid-cols-[1fr_auto_auto_auto]"
           >
             <div>
-              <p className="font-medium text-white">{teacher.name}</p>
-              <p className="mt-1 text-xs text-slate-400">{teacher.title}</p>
+              <p className="font-semibold text-brand-ink">{teacher.name}</p>
+              <p className="mt-1 text-xs text-brand-muted">{teacher.title}</p>
             </div>
-            <p className="text-slate-300">{teacher.observations} observations</p>
-            <p className="font-mono text-slate-300">
+            <p className="text-brand-muted">{teacher.observations} observations</p>
+            <p className="font-mono text-brand-ink">
               {teacher.averageScore.toFixed(1)} avg
             </p>
-            <p className="text-slate-300">{teacher.latestStatus}</p>
+            <p className="text-brand-muted">{teacher.latestStatus}</p>
           </div>
         ))}
       </div>
@@ -255,30 +297,30 @@ export function RecommendationList({
   recommendations: { title: string; body: string; priority: string }[];
 }) {
   return (
-    <section className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
-      <h2 className="font-semibold text-white">AI-generated recommendations</h2>
+    <section className={`${panelClass} p-5`}>
+      <h2 className="font-semibold text-brand-ink">AI-generated recommendations</h2>
       <div className="mt-4 space-y-3">
         {recommendations.length ? (
           recommendations.map((recommendation) => (
             <article
               key={recommendation.title}
-              className="rounded-md border border-cyan-300/20 bg-cyan-300/10 p-3"
+              className="rounded-2xl border border-brand-line bg-brand-soft p-4"
             >
               <div className="flex items-start justify-between gap-3">
-                <h3 className="font-medium text-cyan-50">
+                <h3 className="font-semibold text-brand-ink">
                   {recommendation.title}
                 </h3>
-                <span className="rounded-full border border-cyan-300/30 px-2 py-0.5 text-xs uppercase text-cyan-100">
+                <span className="rounded-full border border-brand-coral/25 bg-white px-2 py-0.5 text-xs font-semibold uppercase text-brand-coral-dark">
                   {recommendation.priority}
                 </span>
               </div>
-              <p className="mt-2 text-sm leading-6 text-cyan-50/85">
+              <p className="mt-2 text-sm leading-6 text-brand-muted">
                 {recommendation.body}
               </p>
             </article>
           ))
         ) : (
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-brand-muted">
             Recommendations will appear after an observation has AI insights.
           </p>
         )}
@@ -299,19 +341,26 @@ export function FeedbackList({
   }[];
 }) {
   return (
-    <section className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
-      <h2 className="font-semibold text-white">Feedback history</h2>
+    <section className={`${panelClass} p-5`}>
+      <h2 className="font-semibold text-brand-ink">Feedback history</h2>
       <div className="mt-4 space-y-3">
         {feedback.length ? (
           feedback.map((item) => (
-            <article key={item.id} className="rounded-md bg-slate-900/80 p-3">
-              <p className="text-sm font-medium text-white">{item.observationTitle}</p>
-              <p className="mt-1 text-xs text-slate-500">{item.createdDate}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-300">{item.body}</p>
+            <article
+              key={item.id}
+              className="rounded-2xl border border-brand-line bg-white p-4"
+            >
+              <p className="text-sm font-semibold text-brand-ink">
+                {item.observationTitle}
+              </p>
+              <p className="mt-1 text-xs text-brand-muted">{item.createdDate}</p>
+              <p className="mt-2 text-sm leading-6 text-brand-muted">
+                {item.body}
+              </p>
             </article>
           ))
         ) : (
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-brand-muted">
             Feedback will appear here after an administrator leaves notes.
           </p>
         )}

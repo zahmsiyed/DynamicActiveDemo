@@ -85,12 +85,12 @@ export const statusLabels: Record<ObservationStatus, string> = {
 
 // The dashboard uses status color as a quick scan cue.
 export const statusStyles: Record<ObservationStatus, string> = {
-  DRAFT: "border-slate-500/30 bg-slate-500/10 text-slate-200",
-  SCHEDULED: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
-  RECORDED: "border-violet-300/30 bg-violet-300/10 text-violet-100",
-  TRANSCRIBED: "border-amber-300/30 bg-amber-300/10 text-amber-100",
-  ANALYZED: "border-emerald-300/30 bg-emerald-300/10 text-emerald-100",
-  FINALIZED: "border-lime-300/30 bg-lime-300/10 text-lime-100",
+  DRAFT: "border-stone-200 bg-stone-50 text-stone-700",
+  SCHEDULED: "border-sky-200 bg-sky-50 text-sky-700",
+  RECORDED: "border-violet-200 bg-violet-50 text-violet-700",
+  TRANSCRIBED: "border-amber-200 bg-amber-50 text-amber-800",
+  ANALYZED: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  FINALIZED: "border-brand-coral/25 bg-brand-soft text-brand-coral-dark",
 };
 
 // Format dates in one place so tables stay consistent.
@@ -371,8 +371,10 @@ export async function getTeacherDashboardData(user: DashboardUser) {
     (observation) => observation.status === ObservationStatus.FINALIZED
   );
   const latestObservation = observations[0] ?? null;
-  const latestMetrics = latestObservation?.insight
-    ? latestObservation.insight.metricsJson
+  const latestInsightObservation =
+    observations.find((observation) => observation.insight) ?? null;
+  const latestMetrics = latestInsightObservation?.insight
+    ? latestInsightObservation.insight.metricsJson
     : null;
 
   return {
@@ -409,9 +411,11 @@ export async function getTeacherDashboardData(user: DashboardUser) {
       },
     ],
     latestSummary:
-      latestObservation?.insight?.summary ??
+      latestInsightObservation?.insight?.summary ??
       "No AI summary is available yet. It will appear here after a transcript is analyzed.",
-    recommendations: readRecommendations(latestObservation?.insight?.recommendations),
+    recommendations: readRecommendations(
+      latestInsightObservation?.insight?.recommendations
+    ),
     feedback: observations.flatMap((observation) =>
       observation.feedback.map((feedback) => ({
         id: feedback.id,

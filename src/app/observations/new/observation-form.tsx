@@ -36,6 +36,12 @@ function todayInputValue() {
   return new Date().toISOString().slice(0, 10);
 }
 
+const panelClass =
+  "rounded-[1.5rem] border border-brand-line bg-brand-card p-5 shadow-sm";
+const inputClass =
+  "mt-2 w-full rounded-2xl border border-brand-line bg-white px-4 py-3 text-brand-ink outline-none transition focus:border-brand-coral focus:ring-4 focus:ring-brand-coral/10";
+const labelClass = "text-sm font-semibold text-brand-ink";
+
 export function ObservationForm({ teachers, rubric }: ObservationFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -113,9 +119,9 @@ export function ObservationForm({ teachers, rubric }: ObservationFormProps) {
 
   if (!teachers.length) {
     return (
-      <div className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
-        <h2 className="font-semibold text-white">No teachers available</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-300">
+      <div className={panelClass}>
+        <h2 className="font-semibold text-brand-ink">No teachers available</h2>
+        <p className="mt-2 text-sm leading-6 text-brand-muted">
           Add or seed teachers for this school before creating observations.
         </p>
       </div>
@@ -124,14 +130,14 @@ export function ObservationForm({ teachers, rubric }: ObservationFormProps) {
 
   return (
     <form className="grid gap-5" onSubmit={handleSubmit}>
-      <section className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
-        <h2 className="font-semibold text-white">Observation details</h2>
+      <section className={panelClass}>
+        <h2 className="font-semibold text-brand-ink">Observation details</h2>
 
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <label className="block">
-            <span className="text-sm font-medium text-slate-200">Teacher</span>
+            <span className={labelClass}>Teacher</span>
             <select
-              className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-slate-50 outline-none transition focus:border-cyan-300"
+              className={inputClass}
               value={teacherId}
               onChange={(event) => setTeacherId(event.target.value)}
             >
@@ -144,11 +150,9 @@ export function ObservationForm({ teachers, rubric }: ObservationFormProps) {
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-slate-200">
-              Report status
-            </span>
+            <span className={labelClass}>Report status</span>
             <select
-              className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-slate-50 outline-none transition focus:border-cyan-300"
+              className={inputClass}
               value={status}
               onChange={(event) =>
                 setStatus(event.target.value as "SCHEDULED" | "FINALIZED")
@@ -160,38 +164,36 @@ export function ObservationForm({ teachers, rubric }: ObservationFormProps) {
           </label>
 
           <label className="block md:col-span-2">
-            <span className="text-sm font-medium text-slate-200">Title</span>
+            <span className={labelClass}>Title</span>
             <input
-              className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-slate-50 outline-none transition focus:border-cyan-300"
+              className={inputClass}
               value={title}
               onChange={(event) => setTitle(event.target.value)}
             />
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-slate-200">Subject</span>
+            <span className={labelClass}>Subject</span>
             <input
-              className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-slate-50 outline-none transition focus:border-cyan-300"
+              className={inputClass}
               value={subject}
               onChange={(event) => setSubject(event.target.value)}
             />
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-slate-200">Grade</span>
+            <span className={labelClass}>Grade</span>
             <input
-              className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-slate-50 outline-none transition focus:border-cyan-300"
+              className={inputClass}
               value={gradeLevel}
               onChange={(event) => setGradeLevel(event.target.value)}
             />
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-slate-200">
-              Observation date
-            </span>
+            <span className={labelClass}>Observation date</span>
             <input
-              className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-slate-50 outline-none transition focus:border-cyan-300"
+              className={inputClass}
               type="date"
               value={scheduledAt}
               onChange={(event) => setScheduledAt(event.target.value)}
@@ -200,9 +202,9 @@ export function ObservationForm({ teachers, rubric }: ObservationFormProps) {
         </div>
       </section>
 
-      <section className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
-        <h2 className="font-semibold text-white">Evaluation scores</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-300">
+      <section className={panelClass}>
+        <h2 className="font-semibold text-brand-ink">Evaluation scores</h2>
+        <p className="mt-2 text-sm leading-6 text-brand-muted">
           Score each category from 1 to 5. Notes are optional but useful for the
           teacher report.
         </p>
@@ -214,22 +216,22 @@ export function ObservationForm({ teachers, rubric }: ObservationFormProps) {
             return (
               <div
                 key={score.category}
-                className="rounded-md border border-white/10 bg-slate-900/70 p-4"
+                className="rounded-[1.25rem] border border-brand-line bg-white p-4"
               >
                 <div className="grid gap-4 md:grid-cols-[1fr_120px]">
                   <div>
-                    <p className="font-medium text-white">{rubricItem?.label}</p>
-                    <p className="mt-1 text-sm text-slate-400">
+                    <p className="font-semibold text-brand-ink">
+                      {rubricItem?.label}
+                    </p>
+                    <p className="mt-1 text-sm text-brand-muted">
                       {rubricItem?.description}
                     </p>
                   </div>
 
                   <label className="block">
-                    <span className="text-sm font-medium text-slate-200">
-                      Score
-                    </span>
+                    <span className={labelClass}>Score</span>
                     <select
-                      className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-slate-50 outline-none transition focus:border-cyan-300"
+                      className={inputClass}
                       value={score.score}
                       onChange={(event) =>
                         updateScore(score.category, {
@@ -247,9 +249,9 @@ export function ObservationForm({ teachers, rubric }: ObservationFormProps) {
                 </div>
 
                 <label className="mt-3 block">
-                  <span className="text-sm font-medium text-slate-200">Note</span>
+                  <span className={labelClass}>Note</span>
                   <input
-                    className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-slate-50 outline-none transition focus:border-cyan-300"
+                    className={inputClass}
                     value={score.note}
                     onChange={(event) =>
                       updateScore(score.category, { note: event.target.value })
@@ -263,26 +265,22 @@ export function ObservationForm({ teachers, rubric }: ObservationFormProps) {
         </div>
       </section>
 
-      <section className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
-        <h2 className="font-semibold text-white">Summary and feedback</h2>
+      <section className={panelClass}>
+        <h2 className="font-semibold text-brand-ink">Summary and feedback</h2>
 
         <label className="mt-4 block">
-          <span className="text-sm font-medium text-slate-200">
-            Observation summary
-          </span>
+          <span className={labelClass}>Observation summary</span>
           <textarea
-            className="mt-2 min-h-28 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-slate-50 outline-none transition focus:border-cyan-300"
+            className={`${inputClass} min-h-28`}
             value={summary}
             onChange={(event) => setSummary(event.target.value)}
           />
         </label>
 
         <label className="mt-4 block">
-          <span className="text-sm font-medium text-slate-200">
-            Written feedback
-          </span>
+          <span className={labelClass}>Written feedback</span>
           <textarea
-            className="mt-2 min-h-32 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-slate-50 outline-none transition focus:border-cyan-300"
+            className={`${inputClass} min-h-32`}
             value={feedback}
             onChange={(event) => setFeedback(event.target.value)}
           />
@@ -290,14 +288,14 @@ export function ObservationForm({ teachers, rubric }: ObservationFormProps) {
       </section>
 
       {error ? (
-        <p className="rounded-md border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-sm text-rose-100">
+        <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {error}
         </p>
       ) : null}
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <button
-          className="rounded-md bg-cyan-300 px-4 py-2 font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-full bg-brand-coral px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-brand-coral-dark disabled:cursor-not-allowed disabled:opacity-60"
           type="submit"
           disabled={isPending}
         >
