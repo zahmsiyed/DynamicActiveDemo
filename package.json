@@ -11,6 +11,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "rm -f prisma/dev.db && npm run db:init && npm run db:seed",
     "db:check": "tsx scripts/check-db.ts",
+    "test:smoke": "tsx scripts/smoke-test.ts",
     "db:studio": "prisma studio"
   },
   "dependencies": {

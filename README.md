@@ -27,7 +27,7 @@ The most important feature is the AI classroom recording workflow:
 
 ## Current Status
 
-Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, and Phase 11 are implemented.
+Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, and Phase 13 are implemented.
 
 Phase 1 added:
 
@@ -134,7 +134,23 @@ Phase 11 added:
 - Final local recording upload after the live session ends
 - Fallback behavior when live Realtime setup cannot run
 
-PDF export and notifications do not exist yet. Those come later.
+Phase 12 added:
+
+- Exportable observation report PDFs
+- `GET /api/observations/:id/report.pdf` route
+- Report-page `Export PDF` link
+- In-app notification center in the shared dashboard shell
+- Report-ready notification creation when a report is finalized
+- Simulated email log creation for teacher report notifications
+
+Phase 13 added:
+
+- Repeatable smoke test command for the local demo path
+- Seeded data readiness checks for reports, transcripts, insights, notifications, and simulated email logs
+- Seeded login, role dashboard, observation API, PDF export, and Realtime guard checks
+- Demo walkthrough documentation for presenting the prototype step by step
+
+The main assignment build is implemented and now has a repeatable demo-prep check.
 
 ## Phase 2 Files
 
@@ -424,6 +440,46 @@ Client-side live recorder. It asks for microphone access, starts a `MediaRecorde
 
 The report page now shows the live classroom recording workflow for school admins before the manual recording upload card.
 
+## Phase 12 Files
+
+`src/lib/pdf-report.ts`
+
+Dependency-free PDF builder for observation reports. It renders report metadata, summary, rubric scores, feedback, transcript evidence, and AI insight data into a downloadable PDF.
+
+`src/app/api/observations/[id]/report.pdf/route.ts`
+
+Role-scoped PDF export route. It uses the same report access rules as the HTML report page and returns `application/pdf`.
+
+`src/lib/notifications.ts`
+
+Shared notification helper. It loads the signed-in user's notification center, creates report-ready in-app notifications, and writes simulated teacher email logs.
+
+`src/components/dashboard-shell.tsx`
+
+The shared shell now displays recent in-app notifications and simulated email log entries for the signed-in user.
+
+`src/app/api/observations/route.ts`
+
+Creating a finalized report now emits report-ready notifications.
+
+`src/app/api/observations/[id]/route.ts`
+
+Updating a report into `FINALIZED` now emits report-ready notifications.
+
+## Phase 13 Files
+
+`scripts/smoke-test.ts`
+
+Repeatable smoke test script. It logs in as each seeded role, checks role-scoped dashboards and APIs, verifies the seeded report, confirms the PDF export endpoint returns a PDF, and confirms the Realtime route fails safely without starting a live call.
+
+`docs/demo-walkthrough.md`
+
+Presentation walkthrough. It gives the reset commands, demo accounts, role-by-role talking points, report workflow, PDF export step, and fallback AI explanation.
+
+`package.json`
+
+Adds `npm run test:smoke` so Phase 13 checks can be run with one command after the dev server starts.
+
 ## Database Commands
 
 Create the SQLite database, generate Prisma Client, and seed demo data:
@@ -436,6 +492,12 @@ Check that the seed data exists:
 
 ```bash
 npm run db:check
+```
+
+Run the Phase 13 smoke test after the dev server is running:
+
+```bash
+npm run test:smoke
 ```
 
 Open Prisma Studio to browse the data visually:
@@ -511,8 +573,10 @@ Auth routes:
 - `POST /api/observations/:id/audio`: school-admin recording upload API
 - `POST /api/observations/:id/transcribe`: school-admin finalized transcription API
 - `POST /api/observations/:id/analyze`: school-admin structured insight API
+- `GET /api/observations/:id/report.pdf`: role-scoped PDF report export
 - `GET /api/observations/:id/transcript`: role-scoped transcript read API
 - `POST /api/observations/:id/transcript`: school-admin fallback transcript API
+- `POST /api/realtime/session`: school-admin OpenAI Realtime session API
 
 ## Dashboard Data Flow
 
@@ -735,6 +799,31 @@ The implementation follows the official OpenAI Realtime docs:
 
 - [Realtime transcription guide](https://developers.openai.com/api/docs/guides/realtime-transcription)
 - [Realtime WebRTC guide](https://developers.openai.com/api/docs/guides/realtime-webrtc)
+
+## Reports And Notifications Flow
+
+The Phase 12 report/export flow is:
+
+```text
+User opens an authorized observation report
+-> report page shows Export PDF
+-> GET /api/observations/:id/report.pdf checks the signed-in user
+-> route loads the same scoped observation report data
+-> buildObservationReportPdf renders a downloadable PDF
+```
+
+The Phase 12 notification flow is:
+
+```text
+School admin creates or updates a report as FINALIZED
+-> sendReportReadyNotifications loads teacher, observer, school, and district context
+-> teacher receives an in-app REPORT_READY notification
+-> teacher receives a simulated EmailLog row
+-> district admins receive an in-app district report notification
+-> DashboardShell displays recent notifications and simulated emails
+```
+
+The prototype does not send real email. `EmailLog` is the audit record that shows what would have been sent in production.
 
 ## Phase 2 Data Model
 
@@ -998,19 +1087,32 @@ Understand:
 
 ### Phase 13: Testing And Demo Prep
 
-Make the project presentable.
+Make the project presentable and repeatable.
 
 Check:
 
 - Login as each role
-- Create an observation
-- Upload a recording
-- Generate a transcript
-- Generate insights
+- Confirm signed-in users redirect away from the public overview
+- Confirm role dashboards cannot be cross-accessed
+- Confirm seeded observations are scoped by role
+- Confirm the seeded report has upload, transcript, insight, notification, and email data
 - View teacher report
 - Export PDF
+- Confirm the Realtime route fails safely when it cannot start a live call
 - README setup instructions
-- Demo video walkthrough outline
+- Demo walkthrough outline
+
+Run:
+
+```bash
+npm run test:smoke
+```
+
+Read:
+
+```text
+docs/demo-walkthrough.md
+```
 
 ## Demo Accounts
 

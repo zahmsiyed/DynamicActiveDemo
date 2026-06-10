@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { sendReportReadyNotifications } from "@/lib/notifications";
 import {
   editableObservationStatuses,
   parseObservationStatus,
@@ -167,6 +168,14 @@ export async function PATCH(request: Request, { params }: ObservationApiRoutePro
       updatedAt: true,
     },
   });
+
+  if (
+    statusWasProvided &&
+    status === ObservationStatus.FINALIZED &&
+    observation.status !== ObservationStatus.FINALIZED
+  ) {
+    await sendReportReadyNotifications(observation.id);
+  }
 
   return NextResponse.json({ observation: updated });
 }

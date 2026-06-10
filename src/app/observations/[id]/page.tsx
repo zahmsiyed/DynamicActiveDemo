@@ -94,6 +94,14 @@ export default async function ObservationReportPage({
           Back to dashboard
         </Link>
 
+        <Link
+          className={secondaryLinkClass}
+          href={`/api/observations/${observation.id}/report.pdf`}
+          target="_blank"
+        >
+          Export PDF
+        </Link>
+
         {user.role === "SCHOOL_ADMIN" ? (
           <Link
             className={primaryLinkClass}

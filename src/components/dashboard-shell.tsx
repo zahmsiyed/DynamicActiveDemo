@@ -5,10 +5,12 @@
 import Link from "next/link";
 
 import { LogoutButton } from "@/components/logout-button";
+import { getNotificationCenter } from "@/lib/notifications";
 import { roleDashboardPath, roleLabels, type AppRole } from "@/lib/session";
 
 type DashboardShellProps = {
   user: {
+    id: string;
     name: string;
     email: string;
     role: AppRole;
@@ -22,7 +24,14 @@ type DashboardShellProps = {
   children: React.ReactNode;
 };
 
-export function DashboardShell({
+function formatNotificationDate(date: Date) {
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+  }).format(date);
+}
+
+export async function DashboardShell({
   user,
   eyebrow,
   title,
@@ -31,6 +40,10 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const scopeLabel = user.school?.name ?? user.district?.name ?? "No scope";
   const dashboardPath = roleDashboardPath(user.role);
+  const notificationCenter = await getNotificationCenter(user.id);
+  const hasNotificationActivity =
+    notificationCenter.notifications.length > 0 ||
+    notificationCenter.emailLogs.length > 0;
   const navLinks = [
     {
       href: dashboardPath,
@@ -97,6 +110,107 @@ export function DashboardShell({
             ))}
           </nav>
         </header>
+
+        {hasNotificationActivity ? (
+          <section className="rounded-[1.5rem] border border-brand-line bg-brand-card p-5 shadow-sm">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="font-semibold text-brand-ink">Notifications</h2>
+                <p className="mt-1 text-sm text-brand-muted">
+                  Report activity and simulated email delivery for this account.
+                </p>
+              </div>
+
+              <span className="w-fit rounded-full border border-brand-line bg-white px-3 py-1 text-xs font-semibold text-brand-coral-dark">
+                {notificationCenter.unreadCount} unread
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+              <div className="space-y-3">
+                {notificationCenter.notifications.length ? (
+                  notificationCenter.notifications.map((notification) => {
+                    const content = (
+                      <>
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-brand-ink">
+                              {notification.title}
+                            </p>
+                            <p className="mt-1 text-sm leading-6 text-brand-muted">
+                              {notification.body}
+                            </p>
+                          </div>
+                          {!notification.readAt ? (
+                            <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-brand-coral" />
+                          ) : null}
+                        </div>
+                        <p className="mt-2 text-xs font-medium text-brand-muted">
+                          {formatNotificationDate(notification.createdAt)}
+                        </p>
+                      </>
+                    );
+
+                    return notification.observationId ? (
+                      <Link
+                        className="block rounded-[1.25rem] border border-brand-line bg-white p-4 transition hover:border-brand-coral"
+                        href={`/observations/${notification.observationId}`}
+                        key={notification.id}
+                      >
+                        {content}
+                      </Link>
+                    ) : (
+                      <article
+                        className="rounded-[1.25rem] border border-brand-line bg-white p-4"
+                        key={notification.id}
+                      >
+                        {content}
+                      </article>
+                    );
+                  })
+                ) : (
+                  <article className="rounded-[1.25rem] border border-brand-line bg-white p-4">
+                    <p className="text-sm font-semibold text-brand-ink">
+                      No in-app notifications
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-brand-muted">
+                      Report-ready messages will appear here when new finalized
+                      reports are created.
+                    </p>
+                  </article>
+                )}
+              </div>
+
+              <div className="rounded-[1.25rem] border border-brand-line bg-white p-4">
+                <h3 className="text-sm font-semibold text-brand-ink">
+                  Simulated email log
+                </h3>
+                {notificationCenter.emailLogs.length ? (
+                  <div className="mt-3 space-y-3">
+                    {notificationCenter.emailLogs.map((emailLog) => (
+                      <div
+                        className="border-t border-brand-line pt-3 first:border-t-0 first:pt-0"
+                        key={emailLog.id}
+                      >
+                        <p className="text-sm font-semibold text-brand-ink">
+                          {emailLog.subject}
+                        </p>
+                        <p className="mt-1 text-xs text-brand-muted">
+                          {emailLog.email} | {emailLog.status} |{" "}
+                          {formatNotificationDate(emailLog.createdAt)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm text-brand-muted">
+                    No simulated emails have been logged for this account yet.
+                  </p>
+                )}
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         {children}
       </div>

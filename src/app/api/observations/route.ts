@@ -10,6 +10,7 @@ import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { sendReportReadyNotifications } from "@/lib/notifications";
 import {
   parseDateInput,
   parseObservationStatus,
@@ -178,6 +179,10 @@ export async function POST(request: Request) {
       status: true,
     },
   });
+
+  if (observation.status === ObservationStatus.FINALIZED) {
+    await sendReportReadyNotifications(observation.id);
+  }
 
   return NextResponse.json(
     {
