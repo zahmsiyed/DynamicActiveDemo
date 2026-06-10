@@ -18,6 +18,7 @@ type DashboardShellProps = {
     school: { name: string } | null;
   };
   eyebrow: string;
+  hideDashboardLink?: boolean;
   title: string;
   description: string;
   children: React.ReactNode;
@@ -33,6 +34,7 @@ function formatNotificationDate(date: Date) {
 export async function DashboardShell({
   user,
   eyebrow,
+  hideDashboardLink = false,
   title,
   description,
   children,
@@ -44,11 +46,15 @@ export async function DashboardShell({
     notificationCenter.notifications.length > 0 ||
     notificationCenter.emailLogs.length > 0;
   const navLinks = [
-    {
-      href: dashboardPath,
-      label: `${roleLabels[user.role]} dashboard`,
-      variant: "primary",
-    },
+    ...(!hideDashboardLink
+      ? [
+          {
+            href: dashboardPath,
+            label: `${roleLabels[user.role]} dashboard`,
+            variant: "primary",
+          },
+        ]
+      : []),
     ...(user.role === "SCHOOL_ADMIN"
       ? [
           {
@@ -90,24 +96,26 @@ export async function DashboardShell({
             </div>
           </div>
 
-          <nav
-            aria-label="Dashboard navigation"
-            className="mt-6 flex flex-wrap gap-2 text-sm"
-          >
-            {navLinks.map((link) => (
-              <Link
-                className={
-                  link.variant === "primary"
-                    ? "rounded-full border border-brand-coral bg-brand-coral px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-brand-coral-dark"
-                    : "rounded-full border border-brand-line bg-white px-4 py-2 font-medium text-brand-ink transition hover:border-brand-coral hover:text-brand-coral"
-                }
-                href={link.href}
-                key={link.href}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
+          {navLinks.length ? (
+            <nav
+              aria-label="Dashboard navigation"
+              className="mt-6 flex flex-wrap gap-2 text-sm"
+            >
+              {navLinks.map((link) => (
+                <Link
+                  className={
+                    link.variant === "primary"
+                      ? "rounded-full border border-brand-coral bg-brand-coral px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-brand-coral-dark"
+                      : "rounded-full border border-brand-line bg-white px-4 py-2 font-medium text-brand-ink transition hover:border-brand-coral hover:text-brand-coral"
+                  }
+                  href={link.href}
+                  key={link.href}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          ) : null}
         </header>
 
         {hasNotificationActivity ? (

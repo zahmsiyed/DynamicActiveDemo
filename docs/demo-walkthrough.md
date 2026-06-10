@@ -1,4 +1,4 @@
-# Phase 13 Demo Walkthrough
+# Demo Walkthrough
 
 This walkthrough is the presentation path for the local Teacher Evaluation
 Studio prototype. It is intentionally repeatable: reset the database, run the
@@ -16,7 +16,7 @@ npm run dev -- --port 3001
 
 Leave the dev server running at `http://localhost:3001`.
 
-In a second terminal, run the Phase 13 smoke test:
+In a second terminal, run the smoke test:
 
 ```bash
 npm run test:smoke
@@ -117,10 +117,10 @@ The route is:
 
 The PDF uses the same role-scoped report access checks as the HTML report page.
 
-## 8. What To Say About Phase 13
+## 8. What To Say About The Smoke Test
 
-Phase 13 does not add a new product feature. It makes the prototype easier to
-trust and present by adding:
+The smoke test does not add a product feature. It makes the prototype easier to
+trust and present by verifying:
 
 - A repeatable smoke test command
 - A documented demo path

@@ -1,7 +1,5 @@
 // This server component is protected by role and then loads school-level data.
 
-import Link from "next/link";
-
 import { DashboardShell } from "@/components/dashboard-shell";
 import {
   MetricGrid,
@@ -20,18 +18,10 @@ export default async function SchoolDashboardPage() {
     <DashboardShell
       user={user}
       eyebrow="School admin dashboard"
+      hideDashboardLink
       title="Observation operations"
       description="Track upcoming evaluations, teacher coverage, recording/transcript progress, and reports that still need feedback or finalization."
     >
-      <div className="flex">
-        <Link
-          className="rounded-full bg-brand-coral px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-coral-dark"
-          href="/observations/new"
-        >
-          Create observation
-        </Link>
-      </div>
-
       <MetricGrid metrics={dashboard.metrics} />
 
       <div className="grid gap-5 lg:grid-cols-[1.4fr_0.8fr]">

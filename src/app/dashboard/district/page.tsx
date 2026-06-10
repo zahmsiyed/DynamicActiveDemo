@@ -18,6 +18,7 @@ export default async function DistrictDashboardPage() {
     <DashboardShell
       user={user}
       eyebrow="District dashboard"
+      hideDashboardLink
       title="District-wide evaluation overview"
       description="Monitor schools, teacher coverage, observation completion, and AI insight readiness across the district."
     >

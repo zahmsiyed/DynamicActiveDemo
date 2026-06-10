@@ -18,6 +18,7 @@ export default async function TeacherDashboardPage() {
     <DashboardShell
       user={user}
       eyebrow="Teacher dashboard"
+      hideDashboardLink
       title="My observation growth"
       description="Review finalized reports, feedback history, transcript insight summaries, and recommendations from classroom observations."
     >
