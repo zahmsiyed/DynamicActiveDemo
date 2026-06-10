@@ -3,13 +3,15 @@
 // district admins see district reports, school admins see school reports, and
 // teachers see only reports attached to their own user account.
 
-import { type Prisma } from "@prisma/client";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { AnalyzeInsightButton } from "@/components/analyze-insight-button";
 import { AudioUploadForm } from "@/components/audio-upload-form";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { StatusBadge } from "@/components/dashboard-widgets";
+import { InsightPanel } from "@/components/insight-panel";
+import { TranscribeButton } from "@/components/transcribe-button";
 import { TranscriptViewer } from "@/components/transcript-viewer";
 import { requireCurrentUser } from "@/lib/auth";
 import {
@@ -32,12 +34,6 @@ type ObservationReportPageProps = {
   }>;
 };
 
-type Recommendation = {
-  title: string;
-  body: string;
-  priority: string;
-};
-
 // Dates are formatted in one helper so the report stays visually consistent.
 function formatDate(date: Date | null) {
   if (!date) return "Not set";
@@ -47,47 +43,6 @@ function formatDate(date: Date | null) {
     day: "numeric",
     year: "numeric",
   }).format(date);
-}
-
-// Prisma JSON is typed as unknown data, so we validate recommendation rows
-// before rendering them in the report.
-function readRecommendations(
-  recommendations: Prisma.JsonValue | null | undefined
-): Recommendation[] {
-  if (!Array.isArray(recommendations)) return [];
-
-  return recommendations
-    .map((item) => {
-      if (!item || typeof item !== "object" || Array.isArray(item)) return null;
-
-      const record = item as Record<string, unknown>;
-      const title = record.title;
-      const body = record.body;
-      const priority = record.priority;
-
-      if (
-        typeof title !== "string" ||
-        typeof body !== "string" ||
-        typeof priority !== "string"
-      ) {
-        return null;
-      }
-
-      return { title, body, priority };
-    })
-    .filter((item): item is Recommendation => Boolean(item));
-}
-
-// Insight metrics also come from JSON. This helper reads only safe primitive
-// values and avoids trusting the stored JSON shape blindly.
-function readMetric(metrics: Prisma.JsonValue | null | undefined, key: string) {
-  if (!metrics || typeof metrics !== "object" || Array.isArray(metrics)) {
-    return null;
-  }
-
-  const record = metrics as Record<string, unknown>;
-  const value = record[key];
-  return typeof value === "number" || typeof value === "string" ? value : null;
 }
 
 export default async function ObservationReportPage({
@@ -110,7 +65,6 @@ export default async function ObservationReportPage({
   const orderedScores = evaluationCategories
     .map((category) => scoresByCategory.get(category))
     .filter((score): score is NonNullable<typeof score> => Boolean(score));
-  const recommendations = readRecommendations(observation.insight?.recommendations);
   const maxUploadSizeLabel = formatUploadSize(maxAudioUploadBytes);
 
   return (
@@ -307,9 +261,10 @@ export default async function ObservationReportPage({
           <div>
             <h2 className="font-semibold text-white">Recording upload</h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-              Attach the classroom recording to this observation. Phase 7 stores
-              the local file and metadata, then creates a fallback transcript so
-              the report can move forward without real AI transcription yet.
+              Attach the classroom recording to this observation. Phase 8 sends
+              the stored file to OpenAI for diarized speech-to-text when an API
+              key is available, then falls back to demo transcript data when the
+              live path cannot run.
             </p>
           </div>
 
@@ -364,6 +319,13 @@ export default async function ObservationReportPage({
           </dl>
         ) : null}
 
+        {user.role === "SCHOOL_ADMIN" && observation.audioUpload ? (
+          <TranscribeButton
+            hasTranscript={Boolean(observation.transcription)}
+            observationId={observation.id}
+          />
+        ) : null}
+
         {user.role === "SCHOOL_ADMIN" ? (
           <AudioUploadForm
             accept={audioUploadAcceptAttribute}
@@ -374,60 +336,38 @@ export default async function ObservationReportPage({
       </section>
 
       <TranscriptViewer
-        canCreateFallback={user.role === "SCHOOL_ADMIN"}
+        canCreateFallback={
+          user.role === "SCHOOL_ADMIN" && !observation.audioUpload
+        }
         observationId={observation.id}
         transcription={observation.transcription}
       />
 
-      {observation.insight ? (
-        <section className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
-          <h2 className="font-semibold text-white">Seeded insight preview</h2>
-          <p className="mt-3 max-w-4xl text-sm leading-6 text-slate-300">
-            {observation.insight.summary}
-          </p>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            {[
-              ["Student talk", readMetric(observation.insight.metricsJson, "studentTalkRatio")],
-              ["Teacher talk", readMetric(observation.insight.metricsJson, "teacherTalkRatio")],
-              ["Questions", readMetric(observation.insight.metricsJson, "questionCount")],
-            ].map(([label, value]) => (
-              <div
-                key={label?.toString()}
-                className="rounded-md border border-white/10 bg-slate-900/70 p-3"
-              >
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                  {label}
-                </p>
-                <p className="mt-2 font-mono text-lg text-white">
-                  {value ?? "n/a"}
-                </p>
-              </div>
-            ))}
+      <section className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h2 className="font-semibold text-white">AI analysis</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+              Phase 9 turns the stored transcript into structured coaching data:
+              summary, metrics, sentiment, recommendations, heatmap, and
+              transcript highlights.
+            </p>
           </div>
 
-          <div className="mt-4 grid gap-3 lg:grid-cols-2">
-            {recommendations.map((recommendation) => (
-              <article
-                key={recommendation.title}
-                className="rounded-md border border-cyan-300/20 bg-cyan-300/10 p-3"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="font-medium text-cyan-50">
-                    {recommendation.title}
-                  </h3>
-                  <span className="rounded-full border border-cyan-300/30 px-2 py-0.5 text-xs uppercase text-cyan-100">
-                    {recommendation.priority}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm leading-6 text-cyan-50/85">
-                  {recommendation.body}
-                </p>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
+          <span className="w-fit rounded-full border border-white/10 bg-slate-900/70 px-3 py-1 text-xs font-medium text-slate-200">
+            {observation.transcription ? "Transcript ready" : "Needs transcript"}
+          </span>
+        </div>
+
+        {user.role === "SCHOOL_ADMIN" && observation.transcription ? (
+          <AnalyzeInsightButton
+            hasInsight={Boolean(observation.insight)}
+            observationId={observation.id}
+          />
+        ) : null}
+      </section>
+
+      <InsightPanel insight={observation.insight} />
     </DashboardShell>
   );
 }

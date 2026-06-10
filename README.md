@@ -27,7 +27,7 @@ The most important feature is the AI classroom recording workflow:
 
 ## Current Status
 
-Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, and Phase 7 are implemented.
+Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, and Phase 9 are implemented.
 
 Phase 1 added:
 
@@ -94,7 +94,27 @@ Phase 7 added:
 - Automatic fallback transcript creation after upload
 - Database verification output for audio upload records
 
-Realtime transcription, file transcription with OpenAI, generated AI insights, PDF export, and notifications do not exist yet. Those come later.
+Phase 8 added:
+
+- `OPENAI_API_KEY` support through ignored `.env.local`
+- OpenAI finalized file transcription for uploaded recordings
+- `gpt-4o-transcribe-diarize` diarized transcript requests
+- Parsing diarized speaker segments into `TranscriptSegment` rows
+- Automatic OpenAI-or-fallback transcript generation after upload
+- Manual school-admin transcript regeneration from the report page
+- A dedicated `POST /api/observations/:id/transcribe` route
+
+Phase 9 added:
+
+- Zod-backed classroom insight schema
+- OpenAI Structured Outputs insight generation
+- `POST /api/observations/:id/analyze` route
+- Deterministic fallback insight generation when OpenAI is unavailable
+- Insight storage in the existing `Insight` Prisma model
+- Report-page AI analysis button
+- Structured insight panel with summary, metrics, pacing note, sentiment, heatmap, recommendations, and highlights
+
+Realtime transcription, PDF export, and notifications do not exist yet. Those come later.
 
 ## Phase 2 Files
 
@@ -278,7 +298,7 @@ Shared audio upload helpers. This file validates recording type and size, format
 
 `src/app/api/observations/[id]/audio/route.ts`
 
-Audio upload API. `POST` accepts one school-admin recording upload, validates scope and file type, stores metadata in `AudioUpload`, and creates a fallback transcript.
+Audio upload API. `POST` accepts one school-admin recording upload, validates scope and file type, stores metadata in `AudioUpload`, and now starts Phase 8 transcript generation.
 
 `src/components/audio-upload-form.tsx`
 
@@ -295,6 +315,58 @@ Ignores the local `.uploads/` directory so classroom recording files are not com
 `scripts/check-db.ts`
 
 The database check now reports audio upload records and sample upload metadata.
+
+## Phase 8 Files
+
+`src/lib/transcripts.ts`
+
+Shared transcript helpers. This file now formats transcript data, reads role-scoped transcript data, builds fallback transcript rows, calls OpenAI finalized transcription, parses diarized segments, replaces stored transcript rows, and updates observation status.
+
+`src/app/api/observations/[id]/transcribe/route.ts`
+
+Final transcription API. `POST` lets a school admin generate or regenerate the finalized transcript for an observation that already has an uploaded recording.
+
+`src/app/api/observations/[id]/audio/route.ts`
+
+The upload API now chains into Phase 8 after saving the file, so a successful upload also attempts transcript generation.
+
+`src/components/transcribe-button.tsx`
+
+Client-side report button for manual final transcript generation. It shows loading, error, OpenAI success, and fallback messages.
+
+`src/app/observations/[id]/page.tsx`
+
+The report page now shows the Phase 8 transcription control when a recording has been uploaded.
+
+`.env.local`
+
+Ignored local environment file. This is where `OPENAI_API_KEY` is stored for real OpenAI transcription during local development.
+
+## Phase 9 Files
+
+`src/lib/insights.ts`
+
+Shared AI insight helper. This file defines the Zod schema, creates the OpenAI JSON Schema, builds the prompt, calls the Responses API with Structured Outputs, validates the parsed result, creates fallback insights, stores the `Insight` row, and updates observation status.
+
+`src/app/api/observations/[id]/analyze/route.ts`
+
+AI analysis API. `POST` lets a school admin generate or regenerate structured insights for an observation that already has a transcript.
+
+`src/components/analyze-insight-button.tsx`
+
+Client-side report button for insight generation. It shows loading, error, OpenAI success, and fallback messages.
+
+`src/components/insight-panel.tsx`
+
+Server-rendered structured insight panel. It safely reads JSON fields and displays summary, metrics, pacing notes, sentiment, heatmap, recommendations, and transcript highlights.
+
+`src/app/observations/[id]/page.tsx`
+
+The report page now shows a Phase 9 AI analysis workflow section and renders the structured insight panel.
+
+`package.json`
+
+Adds `zod` so server code can validate the generated insight object before it is stored.
 
 ## Database Commands
 
@@ -381,6 +453,8 @@ Auth routes:
 - `GET /api/observations/:id`: role-scoped observation read API
 - `PATCH /api/observations/:id`: school-admin update API
 - `POST /api/observations/:id/audio`: school-admin recording upload API
+- `POST /api/observations/:id/transcribe`: school-admin finalized transcription API
+- `POST /api/observations/:id/analyze`: school-admin structured insight API
 - `GET /api/observations/:id/transcript`: role-scoped transcript read API
 - `POST /api/observations/:id/transcript`: school-admin fallback transcript API
 
@@ -468,7 +542,7 @@ Observation report
 -> route validates file type and size
 -> file is stored under .uploads/observations/:id/
 -> AudioUpload metadata is created or replaced
--> fallback transcript is created if one does not exist
+-> Phase 8 tries to generate the final transcript from the upload
 -> report refreshes with recording metadata and transcript segments
 ```
 
@@ -480,6 +554,90 @@ Accepted file types:
 - WebM: `audio/webm`, `video/webm`
 
 Phase 7 stores files locally for the prototype. In production, this would move to object storage such as S3, Vercel Blob, or another durable file store.
+
+## Final Transcription Flow
+
+The Phase 8 finalized transcription flow is:
+
+```text
+Observation report
+-> school admin uploads a recording or clicks Generate final transcript
+-> POST /api/observations/:id/transcribe
+-> route checks the signed-in user and school scope
+-> route confirms the observation has AudioUpload metadata
+-> if OPENAI_API_KEY exists and the local file is available, server sends multipart form-data to OpenAI
+-> OpenAI returns diarized JSON with speaker segments
+-> app replaces the current Transcription and TranscriptSegment rows
+-> observation status moves to TRANSCRIBED unless it was already FINALIZED or ANALYZED
+-> if OpenAI cannot run, app stores the deterministic fallback transcript
+-> report refreshes with the stored transcript
+```
+
+OpenAI request shape:
+
+```text
+POST https://api.openai.com/v1/audio/transcriptions
+model = gpt-4o-transcribe-diarize
+response_format = diarized_json
+chunking_strategy = auto
+file = uploaded classroom recording
+```
+
+The implementation follows the official OpenAI Speech to text and transcription API docs:
+
+- [Speech to text guide](https://developers.openai.com/api/docs/guides/speech-to-text)
+- [Create transcription API reference](https://developers.openai.com/api/docs/api-reference/audio/createTranscription)
+- [GPT-4o Transcribe Diarize model page](https://developers.openai.com/api/docs/models/gpt-4o-transcribe-diarize)
+
+Phase 8 fallback cases:
+
+- `missing_api_key`: `.env.local` does not provide `OPENAI_API_KEY`.
+- `stored_upload_unavailable`: the database has upload metadata, but the local file is not available under `.uploads/`.
+- `invalid_audio_file`: the stored file does not match a supported MP3, WAV, MP4, M4A, or WebM container.
+- `openai_error`: OpenAI rejected the file or returned no usable diarized segments.
+
+Fallback does not mean the route failed. It means the prototype saved demo transcript rows so the report workflow remains usable.
+
+## AI Insight Generation Flow
+
+The Phase 9 insight flow is:
+
+```text
+Observation report
+-> school admin clicks Generate AI insight
+-> POST /api/observations/:id/analyze
+-> route checks the signed-in user and school scope
+-> route confirms the observation has a stored transcript
+-> server builds transcript, rubric, and observation context
+-> if OPENAI_API_KEY exists, server asks OpenAI for a structured JSON insight
+-> Zod validates the parsed insight object
+-> app upserts the Insight row
+-> observation status moves to ANALYZED unless it was already FINALIZED
+-> if OpenAI cannot run, app stores a deterministic fallback insight
+-> report refreshes with summary, metrics, recommendations, sentiment, heatmap, and highlights
+```
+
+OpenAI request shape:
+
+```text
+POST https://api.openai.com/v1/responses
+model = OPENAI_INSIGHT_MODEL or gpt-4o-mini
+text.format.type = json_schema
+text.format.strict = true
+schema = JSON Schema generated from the Zod classroom insight schema
+```
+
+The implementation follows the official OpenAI Structured Outputs and Responses API docs:
+
+- [Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs)
+- [Create response API reference](https://developers.openai.com/api/reference/resources/responses/methods/create)
+
+Phase 9 fallback cases:
+
+- `missing_api_key`: `.env.local` does not provide `OPENAI_API_KEY`.
+- `openai_error`: OpenAI rejected the request, refused the request, or returned unusable structured text.
+
+The fallback insight uses transcript speaker timing and keyword counts to create the same data shape as the OpenAI path. That makes local demos reliable while preserving the contract the UI expects.
 
 ## Phase 2 Data Model
 
@@ -653,16 +811,18 @@ Add real transcription once upload works.
 Build:
 
 - `OPENAI_API_KEY` environment setup
-- OpenAI transcription API route
-- Fallback transcript when no API key exists
+- OpenAI finalized transcription API route
+- OpenAI diarized JSON parsing
+- Fallback transcript when no API key exists or OpenAI cannot process the recording
 - Generated transcript storage
+- Manual report-page transcript generation button
 
 Understand:
 
-- The client uploads audio
-- The server sends audio to OpenAI
-- OpenAI returns text
+- The client uploads audio, but the server sends the stored file to OpenAI
+- OpenAI returns diarized speaker segments
 - The app stores and displays the transcript
+- Why the fallback path keeps local demos reliable
 
 ### Phase 9: AI Insights
 
@@ -769,7 +929,9 @@ These accounts will be created during the seed-data phase:
 
 The app should work even without an OpenAI API key.
 
-- If `OPENAI_API_KEY` exists, the app uses real transcription and AI analysis.
-- If `OPENAI_API_KEY` is missing, the app uses seeded transcript and insight data.
+- If `OPENAI_API_KEY` exists and the uploaded file is usable, Phase 8 uses real OpenAI transcription.
+- If `OPENAI_API_KEY` is missing, the local file is unavailable, or OpenAI cannot process the file, Phase 8 stores fallback transcript data.
+- If `OPENAI_API_KEY` exists and the transcript can be analyzed, Phase 9 uses OpenAI Structured Outputs for insight generation.
+- If `OPENAI_API_KEY` is missing or OpenAI cannot return usable structured output, Phase 9 stores fallback insight data.
 
 This makes local demos reliable while still allowing a real AI workflow when credentials are available.

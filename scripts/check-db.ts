@@ -78,6 +78,9 @@ async function main() {
       `- Audio upload: ${sampleObservation.audioUpload?.fileName ?? "none"}`
     );
     console.log(`- Has AI insight: ${sampleObservation.insight ? "yes" : "no"}`);
+    console.log(
+      `- Insight illustration: ${sampleObservation.insight?.illustrationKey ?? "none"}`
+    );
   }
 }
 

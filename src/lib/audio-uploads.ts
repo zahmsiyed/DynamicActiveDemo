@@ -88,6 +88,52 @@ function normalizeMimeType(mimeType: string) {
   return mimeType.trim().toLowerCase();
 }
 
+// Compare the beginning of a file buffer with a known binary signature.
+function startsWithBytes(bytes: Buffer, signature: number[]) {
+  return signature.every((value, index) => bytes[index] === value);
+}
+
+// MP4 and M4A files advertise their container through an `ftyp` box near the
+// beginning of the file.
+function hasMp4FileTypeBox(bytes: Buffer) {
+  return bytes.length > 12 && bytes.toString("ascii", 4, 8) === "ftyp";
+}
+
+// MIME type comes from the browser and can be spoofed. These signature checks
+// catch obvious non-audio files before we store them or send them to OpenAI.
+export function hasExpectedAudioContainerSignature(
+  bytes: Buffer,
+  mimeType: string
+) {
+  if (mimeType === "audio/wav" || mimeType === "audio/x-wav") {
+    return (
+      bytes.toString("ascii", 0, 4) === "RIFF" &&
+      bytes.toString("ascii", 8, 12) === "WAVE"
+    );
+  }
+
+  if (mimeType === "audio/mpeg" || mimeType === "audio/mp3") {
+    return (
+      startsWithBytes(bytes, [0x49, 0x44, 0x33]) ||
+      (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0)
+    );
+  }
+
+  if (mimeType === "audio/webm" || mimeType === "video/webm") {
+    return startsWithBytes(bytes, [0x1a, 0x45, 0xdf, 0xa3]);
+  }
+
+  if (
+    mimeType === "audio/mp4" ||
+    mimeType === "audio/m4a" ||
+    mimeType === "video/mp4"
+  ) {
+    return hasMp4FileTypeBox(bytes);
+  }
+
+  return false;
+}
+
 // Validate a browser File before reading or writing its bytes.
 export function validateAudioUploadFile(
   file: File | null
@@ -161,6 +207,14 @@ export async function persistAudioUploadFile(
   );
   const fullPath = path.join(storageDirectory, finalFileName);
   const bytes = Buffer.from(await file.arrayBuffer());
+
+  if (!hasExpectedAudioContainerSignature(bytes, validation.mimeType)) {
+    return {
+      ok: false,
+      error:
+        "The selected file does not look like a valid MP3, WAV, MP4, M4A, or WebM recording.",
+    };
+  }
 
   await mkdir(storageDirectory, { recursive: true });
   await writeFile(fullPath, bytes);

@@ -23,7 +23,7 @@ const roleSummaries = [
 ];
 
 // This list mirrors the core AI workflow from the assignment.
-// The real AI pieces are still future phases, so these remain product direction.
+// File transcription and structured insight generation now exist in the app.
 const workflowSteps = [
   "Record or upload classroom audio",
   "Transcribe the lesson",
@@ -42,7 +42,7 @@ export default function Home() {
         <header className="flex items-center justify-between border-b border-white/10 pb-5">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.2em] text-cyan-300">
-              Phase 7 Audio Upload
+              Phase 9 AI Insights
             </p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight">
               Teacher Evaluation Studio
@@ -79,8 +79,8 @@ export default function Home() {
               product direction. The database, seeded authentication layer, and
               role-specific dashboards are now in place. School admins can
               create scored observations, upload a classroom recording, and see
-              timestamped fallback transcripts before we add real AI
-              transcription.
+              finalized transcripts plus structured AI coaching insights when
+              credentials and valid classroom evidence are available.
             </p>
           </div>
 
@@ -89,10 +89,10 @@ export default function Home() {
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div>
                 <p className="text-sm text-slate-400">Observation signal</p>
-                <p className="mt-1 font-medium text-white">Future AI transcript</p>
+                <p className="mt-1 font-medium text-white">Structured insight</p>
               </div>
               <span className="rounded-full bg-emerald-400/10 px-3 py-1 text-sm text-emerald-200">
-                Planned
+                Phase 9
               </span>
             </div>
 
@@ -110,19 +110,19 @@ export default function Home() {
               )}
             </div>
 
-            {/* These labels preview the future metrics without implementing them yet. */}
+            {/* These labels reflect the structured fields Phase 9 stores. */}
             <div className="mt-6 grid grid-cols-3 gap-3 text-center text-sm">
               <div className="rounded-md bg-slate-900/80 p-3">
                 <p className="text-slate-400">Talk time</p>
-                <p className="mt-1 font-semibold text-white">Future</p>
+                <p className="mt-1 font-semibold text-white">Ready</p>
               </div>
               <div className="rounded-md bg-slate-900/80 p-3">
                 <p className="text-slate-400">Questions</p>
-                <p className="mt-1 font-semibold text-white">Future</p>
+                <p className="mt-1 font-semibold text-white">Ready</p>
               </div>
               <div className="rounded-md bg-slate-900/80 p-3">
                 <p className="text-slate-400">Pacing</p>
-                <p className="mt-1 font-semibold text-white">Future</p>
+                <p className="mt-1 font-semibold text-white">Ready</p>
               </div>
             </div>
           </div>
@@ -146,7 +146,7 @@ export default function Home() {
         {/* The workflow strip shows the main AI feature path in a compact form. */}
         <section className="border-t border-white/10 pt-8">
           <h3 className="text-sm font-medium uppercase tracking-[0.2em] text-slate-400">
-            Future AI workflow
+            AI workflow
           </h3>
           <div className="mt-4 grid gap-3 md:grid-cols-4">
             {workflowSteps.map((step, index) => (

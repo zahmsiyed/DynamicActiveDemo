@@ -1,7 +1,7 @@
-// Phase 7 audio upload API route.
+// Phase 7 and Phase 8 audio upload API route.
 // School admins upload a classroom recording here. The route validates the
-// file, stores it locally for the prototype, saves metadata, and creates the
-// fallback transcript used until real transcription is added.
+// file, stores it locally for the prototype, saves metadata, and asks Phase 8
+// to create the final transcript from the stored upload.
 
 import { Role } from "@prisma/client";
 import { NextResponse } from "next/server";
@@ -12,7 +12,7 @@ import {
   removeStoredAudioUpload,
 } from "@/lib/audio-uploads";
 import { getDb } from "@/lib/db";
-import { createFallbackTranscriptForObservation } from "@/lib/transcripts";
+import { generateTranscriptForObservation } from "@/lib/transcripts";
 
 export const runtime = "nodejs";
 
@@ -103,10 +103,9 @@ export async function POST(
 
   await removeStoredAudioUpload(observation.audioUpload?.storagePath ?? null);
 
-  const transcriptResult = await createFallbackTranscriptForObservation(
-    observation.id,
-    user
-  );
+  // Phase 8 tries OpenAI transcription first and falls back to deterministic
+  // demo transcript data when the key or audio processing path is unavailable.
+  const transcriptResult = await generateTranscriptForObservation(observation.id, user);
 
   if ("error" in transcriptResult && transcriptResult.error) {
     return NextResponse.json(
@@ -118,7 +117,8 @@ export async function POST(
   return NextResponse.json(
     {
       audioUpload,
-      transcriptCreated: transcriptResult.created,
+      fallbackReason: transcriptResult.fallbackReason || null,
+      source: transcriptResult.source,
       transcript: transcriptResult.transcript,
     },
     { status: 201 }
