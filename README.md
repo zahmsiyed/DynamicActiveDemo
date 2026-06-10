@@ -27,7 +27,7 @@ The most important feature is the AI classroom recording workflow:
 
 ## Current Status
 
-Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, and Phase 10 are implemented.
+Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, and Phase 11 are implemented.
 
 Phase 1 added:
 
@@ -125,7 +125,16 @@ Phase 10 added:
 - Transcript evidence cards
 - Highlighted transcript rows that match AI evidence timestamps
 
-Realtime transcription, PDF export, and notifications do not exist yet. Those come later.
+Phase 11 added:
+
+- Browser microphone recorder on school-admin observation reports
+- OpenAI Realtime session route at `POST /api/realtime/session`
+- WebRTC offer/answer exchange through the app server
+- Live transcript preview from Realtime transcription delta/completion events
+- Final local recording upload after the live session ends
+- Fallback behavior when live Realtime setup cannot run
+
+PDF export and notifications do not exist yet. Those come later.
 
 ## Phase 2 Files
 
@@ -399,7 +408,21 @@ The report page now creates one parsed insight view and shares it with both the 
 
 `src/app/page.tsx`
 
-The homepage now labels the prototype as Phase 10 and reflects the polished insight report layer.
+The public overview reflects the polished insight report layer, while authenticated users are redirected to their role dashboard.
+
+## Phase 11 Files
+
+`src/app/api/realtime/session/route.ts`
+
+Server-side OpenAI Realtime session route. The browser sends an SDP offer to this route, and the route checks authentication, validates school-admin observation scope, and forwards the offer to OpenAI with a transcription-only session configuration.
+
+`src/components/realtime-recorder.tsx`
+
+Client-side live recorder. It asks for microphone access, starts a `MediaRecorder`, creates a WebRTC peer connection, listens for transcript deltas on the OpenAI data channel, and uploads the final recording through the existing Phase 7 audio route when stopped.
+
+`src/app/observations/[id]/page.tsx`
+
+The report page now shows the live classroom recording workflow for school admins before the manual recording upload card.
 
 ## Database Commands
 
@@ -686,6 +709,32 @@ Observation report
 ```
 
 Phase 10 does not create new AI data. It makes the Phase 9 data easier to scan, compare, and explain during a coaching conversation.
+
+## Realtime Transcription Flow
+
+The Phase 11 live transcription flow is:
+
+```text
+School admin opens an observation report
+-> RealtimeRecorder requests microphone access
+-> browser starts MediaRecorder for the final classroom recording
+-> browser creates an RTCPeerConnection and SDP offer
+-> POST /api/realtime/session receives the SDP offer
+-> route validates auth and observation scope
+-> route sends the offer plus transcription session config to OpenAI
+-> browser receives OpenAI SDP answer and sets the remote description
+-> transcript delta/completion events arrive on the data channel
+-> user stops recording
+-> final browser recording uploads to POST /api/observations/:id/audio
+-> Phase 8 file transcription creates the durable saved transcript
+```
+
+Realtime transcription is intentionally a preview layer. The durable report transcript still comes from the finalized file transcription route because that path supports diarization and stores normalized `TranscriptSegment` rows.
+
+The implementation follows the official OpenAI Realtime docs:
+
+- [Realtime transcription guide](https://developers.openai.com/api/docs/guides/realtime-transcription)
+- [Realtime WebRTC guide](https://developers.openai.com/api/docs/guides/realtime-webrtc)
 
 ## Phase 2 Data Model
 

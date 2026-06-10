@@ -11,6 +11,7 @@ import { AudioUploadForm } from "@/components/audio-upload-form";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { StatusBadge } from "@/components/dashboard-widgets";
 import { InsightPanel } from "@/components/insight-panel";
+import { RealtimeRecorder } from "@/components/realtime-recorder";
 import { TranscribeButton } from "@/components/transcribe-button";
 import { TranscriptViewer } from "@/components/transcript-viewer";
 import { requireCurrentUser } from "@/lib/auth";
@@ -269,15 +270,22 @@ export default async function ObservationReportPage({
         </section>
       </div>
 
+      {user.role === "SCHOOL_ADMIN" ? (
+        <RealtimeRecorder
+          maxSizeLabel={maxUploadSizeLabel}
+          observationId={observation.id}
+        />
+      ) : null}
+
       <section className={panelClass}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h2 className="font-semibold text-brand-ink">Recording upload</h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-brand-muted">
-              Attach the classroom recording to this observation. Phase 8 sends
-              the stored file to OpenAI for diarized speech-to-text when an API
-              key is available, then falls back to demo transcript data when the
-              live path cannot run.
+              Attach an existing classroom recording to this observation.
+              Phase 8 sends the stored file to OpenAI for diarized
+              speech-to-text when an API key is available, then falls back to
+              demo transcript data when the live path cannot run.
             </p>
           </div>
 
