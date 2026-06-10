@@ -340,14 +340,6 @@ Insight generation:
 | Seed data | `prisma/seed.ts` | Deterministic local baseline, not production data logic. |
 | PDF reports | Generated on request | Not stored. |
 
-Do not commit:
-
-- `.env` or `.env.local`
-- OpenAI API keys
-- JWT secrets
-- `prisma/*.db`
-- `.uploads/`
-
 ## Testing
 
 Current local checks:
