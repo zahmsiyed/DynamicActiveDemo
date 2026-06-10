@@ -30,9 +30,9 @@ const workflowSteps = [
 ];
 
 const overviewStats = [
-  { label: "Seeded roles", value: "3" },
-  { label: "Reports", value: "7" },
-  { label: "AI insights", value: "3" },
+  { label: "Seeded roles", value: "x" },
+  { label: "Reports", value: "x" },
+  { label: "AI insights", value: "x" },
 ];
 
 export default async function Home() {

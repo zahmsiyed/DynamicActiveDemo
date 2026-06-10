@@ -27,15 +27,15 @@ const demoAccounts = [
 ];
 
 const productSignals = [
-  { label: "Reports ready", value: "7" },
-  { label: "AI insights", value: "3" },
-  { label: "Avg score", value: "3.6" },
+  { label: "Reports ready", value: "x" },
+  { label: "AI insights", value: "x" },
+  { label: "Avg score", value: "x" },
 ];
 
 const observationSignalRows = [
-  { colorClass: "bg-brand-coral", label: "Teacher talk", value: 62 },
-  { colorClass: "bg-brand-gold", label: "Student talk", value: 38 },
-  { colorClass: "bg-emerald-400", label: "Clarity", value: 84 },
+  { colorClass: "bg-brand-coral", label: "Teacher talk", width: 62 },
+  { colorClass: "bg-brand-gold", label: "Student talk", width: 38 },
+  { colorClass: "bg-emerald-400", label: "Clarity", width: 84 },
 ];
 
 function safeRedirectPath(requestedPath: string | null, fallbackPath: string) {
@@ -178,12 +178,12 @@ export function LoginForm() {
               <div key={row.label}>
                 <div className="mb-1 flex justify-between text-xs text-brand-muted">
                   <span>{row.label}</span>
-                  <span>{row.value}%</span>
+                  <span>x%</span>
                 </div>
                 <div className="h-2 rounded-full bg-brand-soft">
                   <div
                     className={`h-2 rounded-full ${row.colorClass}`}
-                    style={{ width: `${row.value}%` }}
+                    style={{ width: `${row.width}%` }}
                   />
                 </div>
               </div>

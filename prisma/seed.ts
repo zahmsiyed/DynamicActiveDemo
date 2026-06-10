@@ -473,55 +473,62 @@ async function main() {
 
   const district = await prisma.district.create({
     data: {
-      name: "North Valley District",
+      name: "Springfield School District",
     },
   });
 
-  const [lincoln, riverside, cedarGrove] = await Promise.all([
-    prisma.school.create({
-      data: {
-        name: "Lincoln Middle School",
-        districtId: district.id,
-      },
-    }),
-    prisma.school.create({
-      data: {
-        name: "Riverside Elementary",
-        districtId: district.id,
-      },
-    }),
-    prisma.school.create({
-      data: {
-        name: "Cedar Grove High School",
-        districtId: district.id,
-      },
-    }),
-  ]);
+  const [springfield, countrySprings, chaparral, diamondBar] =
+    await Promise.all([
+      prisma.school.create({
+        data: {
+          name: "Springfield Middle School",
+          districtId: district.id,
+        },
+      }),
+      prisma.school.create({
+        data: {
+          name: "Country Springs Elementary School",
+          districtId: district.id,
+        },
+      }),
+      prisma.school.create({
+        data: {
+          name: "Chaparral Middle School",
+          districtId: district.id,
+        },
+      }),
+      prisma.school.create({
+        data: {
+          name: "Diamond Bar High School",
+          districtId: district.id,
+        },
+      }),
+    ]);
 
   const districtAdmin = await prisma.user.create({
     data: {
-      name: "Dana Rivera",
+      name: "Superintendent Chalmers",
       email: "district@example.com",
       passwordHash,
       role: "DISTRICT_ADMIN",
-      title: "District Instruction Lead",
+      title: "Superintendent",
       districtId: district.id,
     },
   });
 
   const schoolAdmin = await prisma.user.create({
     data: {
-      name: "Sam Patel",
+      name: "Principal Skinner",
       email: "school@example.com",
       passwordHash,
       role: "SCHOOL_ADMIN",
-      title: "Assistant Principal",
+      title: "Principal",
       districtId: district.id,
-      schoolId: lincoln.id,
+      schoolId: springfield.id,
     },
   });
 
-  const cedarAdmin = await prisma.user.create({
+  const diamondBarAdmin = await prisma.user.create({
     data: {
       name: "Alex Morgan",
       email: "cedar.admin@example.com",
@@ -529,7 +536,7 @@ async function main() {
       role: "SCHOOL_ADMIN",
       title: "Dean of Instruction",
       districtId: district.id,
-      schoolId: cedarGrove.id,
+      schoolId: diamondBar.id,
     },
   });
 
@@ -541,7 +548,7 @@ async function main() {
       role: "TEACHER",
       title: "7th Grade Science Teacher",
       districtId: district.id,
-      schoolId: lincoln.id,
+      schoolId: springfield.id,
     },
   });
 
@@ -553,7 +560,7 @@ async function main() {
       role: "TEACHER",
       title: "6th Grade Humanities Teacher",
       districtId: district.id,
-      schoolId: lincoln.id,
+      schoolId: chaparral.id,
     },
   });
 
@@ -565,7 +572,7 @@ async function main() {
       role: "TEACHER",
       title: "4th Grade Math Teacher",
       districtId: district.id,
-      schoolId: riverside.id,
+      schoolId: countrySprings.id,
     },
   });
 
@@ -577,7 +584,7 @@ async function main() {
       role: "TEACHER",
       title: "High School Geometry Teacher",
       districtId: district.id,
-      schoolId: cedarGrove.id,
+      schoolId: diamondBar.id,
     },
   });
 
@@ -595,7 +602,7 @@ async function main() {
         "Students investigated heat transfer and used evidence from lab tables to support claims during partner and whole-group discussion.",
       teacherId: teacher.id,
       observerId: schoolAdmin.id,
-      schoolId: lincoln.id,
+      schoolId: springfield.id,
       districtId: district.id,
       scores: {
         create: scoreRows(
@@ -668,7 +675,7 @@ async function main() {
         "Students compared written claims and practiced using precise evidence from two trials.",
       teacherId: teacher.id,
       observerId: schoolAdmin.id,
-      schoolId: lincoln.id,
+      schoolId: springfield.id,
       districtId: district.id,
       scores: {
         create: scoreRows(
@@ -736,7 +743,7 @@ async function main() {
       scheduledAt: new Date("2026-06-18T17:00:00.000Z"),
       teacherId: teacher.id,
       observerId: schoolAdmin.id,
-      schoolId: lincoln.id,
+      schoolId: springfield.id,
       districtId: district.id,
       scores: {
         create: scoreRows(
@@ -772,7 +779,7 @@ async function main() {
         "Small-group reading conferences focused on citing text evidence and explaining character motivation.",
       teacherId: owen.id,
       observerId: schoolAdmin.id,
-      schoolId: lincoln.id,
+      schoolId: chaparral.id,
       districtId: district.id,
       scores: {
         create: scoreRows(
@@ -832,7 +839,7 @@ async function main() {
         "Students shared mental math strategies during a short number talk warmup.",
       teacherId: elena.id,
       observerId: districtAdmin.id,
-      schoolId: riverside.id,
+      schoolId: countrySprings.id,
       districtId: district.id,
       scores: {
         create: scoreRows(
@@ -871,8 +878,8 @@ async function main() {
       status: ObservationStatus.DRAFT,
       scheduledAt: new Date("2026-06-24T19:00:00.000Z"),
       teacherId: priya.id,
-      observerId: cedarAdmin.id,
-      schoolId: cedarGrove.id,
+      observerId: diamondBarAdmin.id,
+      schoolId: diamondBar.id,
       districtId: district.id,
       scores: {
         create: scoreRows(
@@ -906,8 +913,8 @@ async function main() {
       summary:
         "Students revised proof statements and matched theorem reasons with increasing precision.",
       teacherId: priya.id,
-      observerId: cedarAdmin.id,
-      schoolId: cedarGrove.id,
+      observerId: diamondBarAdmin.id,
+      schoolId: diamondBar.id,
       districtId: district.id,
       scores: {
         create: scoreRows(
@@ -929,7 +936,7 @@ async function main() {
       },
       feedback: {
         create: {
-          authorId: cedarAdmin.id,
+          authorId: diamondBarAdmin.id,
           teacherId: priya.id,
           body: "Academic vocabulary was precise and students revised proofs productively. Add one independent verification step before confirming theorem choices.",
         },
@@ -969,7 +976,7 @@ async function main() {
   await seedReportReadyActivity({
     districtAdmins: [districtAdmin],
     observationId: inquiryObservation.id,
-    schoolName: lincoln.name,
+    schoolName: springfield.name,
     teacher,
     title: inquiryObservation.title,
   });
@@ -977,7 +984,7 @@ async function main() {
   await seedReportReadyActivity({
     districtAdmins: [districtAdmin],
     observationId: geometryObservation.id,
-    schoolName: cedarGrove.name,
+    schoolName: diamondBar.name,
     teacher: priya,
     title: geometryObservation.title,
   });
@@ -989,34 +996,34 @@ async function main() {
         observationId: inquiryObservation.id,
         type: "TRANSCRIPT_READY",
         title: "Transcript ready for review",
-        body: "Inquiry Lab Discussion has timestamped transcript evidence ready for coaching review.",
+        body: `${inquiryObservation.title} has timestamped transcript evidence ready for coaching review.`,
       },
       {
         userId: schoolAdmin.id,
         observationId: inquiryObservation.id,
         type: "INSIGHT_READY",
         title: "AI insight generated",
-        body: "Inquiry Lab Discussion includes participation metrics, highlights, and recommendations.",
+        body: `${inquiryObservation.title} includes participation metrics, highlights, and recommendations.`,
       },
       {
         userId: districtAdmin.id,
         observationId: geometryObservation.id,
         type: "DISTRICT_ANALYTICS",
         title: "Cross-school report activity",
-        body: "Cedar Grove High School added a finalized geometry report with AI coaching data.",
+        body: `${diamondBar.name} added a finalized geometry report with AI coaching data.`,
       },
     ],
   });
 
   console.log("Seed complete");
   console.table([
-    { role: "District Admin", email: "district@example.com", password: demoPassword },
-    { role: "School Admin", email: "school@example.com", password: demoPassword },
-    { role: "Teacher", email: "teacher@example.com", password: demoPassword },
+    { role: "District Admin", email: districtAdmin.email, password: demoPassword },
+    { role: "School Admin", email: schoolAdmin.email, password: demoPassword },
+    { role: "Teacher", email: teacher.email, password: demoPassword },
   ]);
   console.table({
     district: district.name,
-    schools: 3,
+    schools: 4,
     users: 7,
     observations: 7,
     finalizedReports: 2,
