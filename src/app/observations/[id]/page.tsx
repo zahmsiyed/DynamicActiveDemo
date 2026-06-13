@@ -338,7 +338,7 @@ export default async function ObservationReportPage({
 
             <div className={compactCardClass}>
               <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-muted">
-                Storage
+                Storage object
               </dt>
               <dd className="mt-2 break-words font-mono text-xs text-brand-muted">
                 {observation.audioUpload.storagePath ?? "metadata only"}

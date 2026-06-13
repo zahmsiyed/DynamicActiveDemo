@@ -1,11 +1,15 @@
-// These helpers keep file validation and local-disk storage out of the route
-// handler so the upload rules are easy to audit.
+// These helpers keep file validation and Supabase Storage persistence out of
+// the route handler so the upload rules are easy to audit.
 
-import { mkdir, unlink, writeFile } from "fs/promises";
-import path from "path";
+import { randomUUID } from "crypto";
 
-// Keep the prototype upload limit modest so route handlers do not load huge
-// files into memory. Production would stream to object storage instead.
+import {
+  removeRecordingObject,
+  uploadRecordingObject,
+} from "@/lib/supabase-storage";
+
+// Keep the upload limit modest so route handlers do not load huge files into
+// memory before handing them to Supabase Storage.
 export const maxAudioUploadBytes = 25 * 1024 * 1024;
 
 // The prototype accepts common classroom audio/video container types.
@@ -71,7 +75,7 @@ export function formatUploadSize(sizeBytes: number) {
   return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-// Keep stored filenames predictable and safe for local filesystem paths.
+// Keep stored filenames predictable and safe for private object paths.
 function sanitizeFileName(fileName: string) {
   return (
     fileName
@@ -172,7 +176,11 @@ export function validateAudioUploadFile(
   };
 }
 
-// Save the upload to a local ignored directory and return metadata for Prisma.
+function hasFileExtension(fileName: string) {
+  return /\.[a-z0-9]{1,8}$/i.test(fileName);
+}
+
+// Save the upload to Supabase Storage and return metadata for Prisma.
 export async function persistAudioUploadFile(
   file: File,
   observationId: string
@@ -188,23 +196,11 @@ export async function persistAudioUploadFile(
 
   const safeOriginalName = sanitizeFileName(file.name);
   const extension = validation.extension;
-  const storedFileName = `${Date.now()}-${safeOriginalName}`;
-  const finalFileName = path.extname(storedFileName)
+  const storedFileName = `${Date.now()}-${randomUUID()}-${safeOriginalName}`;
+  const finalFileName = hasFileExtension(storedFileName)
     ? storedFileName
     : `${storedFileName}.${extension}`;
-  const storagePath = [
-    ".uploads",
-    "observations",
-    observationId,
-    finalFileName,
-  ].join("/");
-  const storageDirectory = path.join(
-    process.cwd(),
-    ".uploads",
-    "observations",
-    observationId
-  );
-  const fullPath = path.join(storageDirectory, finalFileName);
+  const storagePath = ["observations", observationId, finalFileName].join("/");
   const bytes = Buffer.from(await file.arrayBuffer());
 
   if (!hasExpectedAudioContainerSignature(bytes, validation.mimeType)) {
@@ -215,8 +211,21 @@ export async function persistAudioUploadFile(
     };
   }
 
-  await mkdir(storageDirectory, { recursive: true });
-  await writeFile(fullPath, bytes);
+  try {
+    await uploadRecordingObject({
+      bytes,
+      contentType: validation.mimeType,
+      storagePath,
+    });
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Recording could not be stored in Supabase Storage.",
+    };
+  }
 
   return {
     ok: true,
@@ -228,26 +237,7 @@ export async function persistAudioUploadFile(
   };
 }
 
-// Remove a previously uploaded local file when replacing an observation upload.
-// The path guard prevents this helper from deleting anything outside .uploads.
+// Remove a previously uploaded object when replacing an observation upload.
 export async function removeStoredAudioUpload(storagePath: string | null) {
-  if (!storagePath) return;
-
-  const uploadRoot = path.resolve(process.cwd(), ".uploads");
-  const filePath = path.resolve(/* turbopackIgnore: true */ process.cwd(), storagePath);
-  const relativePath = path.relative(uploadRoot, filePath);
-
-  if (
-    filePath === uploadRoot ||
-    relativePath.startsWith("..") ||
-    path.isAbsolute(relativePath)
-  ) {
-    return;
-  }
-
-  try {
-    await unlink(filePath);
-  } catch {
-    // Missing old files should not block replacing metadata in the prototype.
-  }
+  await removeRecordingObject(storagePath);
 }

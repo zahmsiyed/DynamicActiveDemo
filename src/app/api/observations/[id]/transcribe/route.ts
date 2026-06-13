@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { generateTranscriptForObservation } from "@/lib/transcripts";
 
-// File transcription reads local upload bytes, so this route must run in Node.
+// File transcription reads private Storage bytes, so this route must run in Node.
 export const runtime = "nodejs";
 
 type ObservationTranscribeRouteProps = {

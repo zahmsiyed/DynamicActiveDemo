@@ -2,7 +2,7 @@
 
 Teacher Evaluation Studio is a Next.js prototype for classroom observation workflows. It gives district admins, school admins, and teachers role-scoped dashboards for creating observations, reviewing rubric feedback, attaching classroom recordings, generating transcripts, producing coaching insights, and exporting PDF reports.
 
-The app is useful as a local demo and codebase reference. It is not production-ready without replacing local file storage and hardening the production controls described below.
+The app is useful as a local demo and codebase reference. It is not production-ready without hardening the production controls described below.
 
 ## Contents
 
@@ -14,6 +14,8 @@ The app is useful as a local demo and codebase reference. It is not production-r
 - [Codebase Map](#codebase-map)
 - [How To Read The Code](#how-to-read-the-code)
 - [Data Model](#data-model)
+- [Database Workflow](#database-workflow)
+- [Supabase Storage Setup](#supabase-storage-setup)
 - [Auth And Role Scope](#auth-and-role-scope)
 - [Routes](#routes)
 - [API Overview](#api-overview)
@@ -57,7 +59,7 @@ Implemented today:
 - Rubric scoring with six categories and score range 1 to 5.
 - Written feedback storage.
 - Recording upload UI for MP3, WAV, MP4, M4A, and WebM.
-- Local ignored `.uploads/` storage for uploaded classroom recordings.
+- Private Supabase Storage for uploaded classroom recordings.
 - OpenAI file transcription when `OPENAI_API_KEY` exists.
 - Realtime browser microphone workflow using WebRTC and `POST /api/realtime/session`.
 - OpenAI structured insight generation when `OPENAI_API_KEY` exists.
@@ -111,6 +113,9 @@ Minimum local environment values:
 ```bash
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/postgres?sslmode=require"
 DIRECT_URL="postgresql://USER:PASSWORD@HOST:PORT/postgres?sslmode=require"
+SUPABASE_URL="https://PROJECT_REF.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="supabase-service-role-key"
+SUPABASE_RECORDINGS_BUCKET="teacher-evaluation-recordings"
 JWT_SECRET="replace-this-with-a-long-random-secret"
 ```
 
@@ -120,6 +125,14 @@ Supabase connection convention:
 - `DIRECT_URL` should use the direct database host, usually `db.<project-ref>.supabase.co:5432`, for Prisma migrations.
 - Use the full connection strings copied from Supabase when possible. If a password is typed manually, URL-encode reserved characters such as `#`, `@`, `/`, `?`, and `%`.
 - Do not use the public Supabase API URL (`https://<project-ref>.supabase.co`) as either Prisma database URL.
+- `SUPABASE_URL` should be the project origin, for example
+  `https://<project-ref>.supabase.co`. The server helper normalizes accidental
+  `/rest/v1/` suffixes to the project origin before creating the Storage client.
+- `SUPABASE_SERVICE_ROLE_KEY` must stay server-only. Do not rename it with a
+  `NEXT_PUBLIC_` prefix or pass it to client components.
+- `SUPABASE_RECORDINGS_BUCKET` should name a private Storage bucket. The server
+  helper attempts to create it on first upload when the service-role key has
+  permission; otherwise create the bucket manually in the Supabase dashboard.
 
 Optional OpenAI values:
 
@@ -211,7 +224,8 @@ The seed file includes additional demo users for broader dashboard data.
 | `src/lib/auth.ts` | Cookie-to-user helpers and server-side auth helpers. |
 | `src/lib/dashboard-data.ts` | Dashboard queries and view models. |
 | `src/lib/observations.ts` | Observation access checks and report query shape. |
-| `src/lib/audio-uploads.ts` | Upload validation, local storage, and path guard. |
+| `src/lib/audio-uploads.ts` | Upload validation and Supabase Storage persistence. |
+| `src/lib/supabase-storage.ts` | Server-only Supabase Storage client, bucket check, upload, download, and delete helpers. |
 | `src/lib/transcripts.ts` | Transcript formatting, OpenAI transcription, fallback transcript generation, and persistence. |
 | `src/lib/insights.ts` | Zod insight schema, OpenAI insight generation, fallback generation, and persistence. |
 | `src/lib/pdf-report.ts` | Dependency-free PDF builder. |
@@ -308,6 +322,36 @@ For an existing environment:
 - Avoid `npm run db:reset` unless the configured database is disposable. It
   destroys and recreates data before reseeding.
 
+## Supabase Storage Setup
+
+Recording uploads use a private Supabase Storage bucket. The server writes raw
+audio/video bytes to Storage and stores only `AudioUpload.storagePath` plus
+metadata in Postgres.
+
+Object paths use this shape:
+
+```text
+observations/<observationId>/<timestamp>-<uuid>-<safe-original-name>
+```
+
+The server helper attempts to create `SUPABASE_RECORDINGS_BUCKET` on first
+upload using `SUPABASE_SERVICE_ROLE_KEY`. If that is not allowed in your
+project, create the bucket manually:
+
+1. Open the Supabase dashboard for the project.
+2. Go to Storage.
+3. Create a bucket named by `SUPABASE_RECORDINGS_BUCKET`.
+4. Keep the bucket private.
+5. Do not add public read policies for classroom recordings.
+6. Add the same bucket name to `.env.local` and to Vercel environment variables.
+
+The service-role key is required only on the server. It must never be committed,
+logged, exposed through `NEXT_PUBLIC_*`, or sent to client components.
+
+Both manual uploads and live browser recordings use the same server endpoint,
+`POST /api/observations/:id/audio`, so they share the same validation, Storage
+persistence, Prisma metadata write, and transcript-generation fallback behavior.
+
 ## Auth And Role Scope
 
 Auth flow:
@@ -374,10 +418,11 @@ File transcription:
 
 1. School admin uploads or records classroom media.
 2. The app validates file type, size, and basic container signature.
-3. The route stores upload metadata and local file bytes under `.uploads/`.
-4. If `OPENAI_API_KEY` exists and the stored file is available, the app asks OpenAI for a diarized transcript.
-5. The app normalizes speaker turns into `TranscriptSegment` rows.
-6. If OpenAI is unavailable or returns unusable output, the app stores deterministic fallback transcript rows.
+3. The route stores raw recording bytes in a private Supabase Storage object.
+4. The route stores only upload metadata and the Storage object path in Postgres.
+5. If `OPENAI_API_KEY` exists and the stored object is available, the app asks OpenAI for a diarized transcript.
+6. The app normalizes speaker turns into `TranscriptSegment` rows.
+7. If OpenAI, Storage download, or transcription parsing fails, the app stores deterministic fallback transcript rows.
 
 Realtime transcription:
 
@@ -401,7 +446,7 @@ Insight generation:
 | --- | --- | --- |
 | Users, observations, scores, feedback, transcripts, insights, notifications, email logs | Prisma/Supabase PostgreSQL | Hosted prototype database. |
 | Session state | HTTP-only JWT cookie | Cookie stores a small signed payload; database remains source of truth for current user fields. |
-| Uploaded recordings | `.uploads/` local folder | Ignored by Git. Production should use object storage. |
+| Uploaded recordings | Private Supabase Storage bucket | Raw audio/video bytes are not stored in Postgres. |
 | Seed data | `prisma/seed.ts` | Deterministic demo baseline, not production data logic. |
 | PDF reports | Generated on request | Not stored. |
 
@@ -415,6 +460,16 @@ npm run build
 npm run db:check
 APP_BASE_URL=http://localhost:3001 npm run test:smoke
 ```
+
+Storage upload verification currently requires a running dev server and valid
+Supabase Storage env vars. The verified path is:
+
+1. Sign in as `school@example.com`.
+2. Create a temporary observation through `POST /api/observations`.
+3. Upload a generated WAV through `POST /api/observations/:id/audio`.
+4. Confirm `AudioUpload.storagePath` starts with `observations/<id>/`.
+5. Confirm the report API returns upload metadata and a transcript or fallback transcript.
+6. Remove the temporary Storage object and reseed the demo database.
 
 The smoke script verifies the main demo path: signed-out overview, invalid login rejection, seeded data readiness, role logins, `/api/auth/me`, role dashboards, signed-in `/` redirect, scoped observations API, seeded report access, cross-role dashboard redirect, PDF response, and Realtime guard behavior.
 
@@ -434,7 +489,7 @@ The app can use Vercel for the Next.js runtime, with Supabase PostgreSQL as the 
 Before using Vercel for anything beyond a short-lived demo:
 
 1. Use `npm run db:deploy` for production migration application.
-2. Replace `.uploads/` local file writes with object storage.
+2. Confirm the Supabase Storage bucket exists and is private.
 3. Decide whether seeded auth is acceptable or replace it with a production auth provider.
 4. Add consent, retention, deletion, and audit policies for classroom recordings.
 5. Add real email delivery if notifications should leave the app.
@@ -446,14 +501,17 @@ Deployment environment variables:
 | --- | --- | --- |
 | `DATABASE_URL` | Yes | Supabase PostgreSQL connection used by the app. |
 | `DIRECT_URL` | Yes | Supabase PostgreSQL connection used by Prisma migrations. |
+| `SUPABASE_URL` | Yes for uploads | Supabase project API URL used by the server-only Storage client. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes for uploads | Server-only key used to write, read, and delete private recording objects. Never expose to the browser. |
+| `SUPABASE_RECORDINGS_BUCKET` | Yes for uploads | Private bucket name for classroom recording objects. |
 | `JWT_SECRET` | Required in production | Signs and verifies session JWTs. |
 | `OPENAI_API_KEY` | Optional | Enables OpenAI transcription, Realtime, and insight generation. |
 | `OPENAI_INSIGHT_MODEL` | Optional | Overrides insight model; defaults to `gpt-4o-mini`. |
 
 ## Known Limitations
 
-- Local `.uploads/` storage is not production-safe.
 - There is no production auth provider.
+- Uploads still pass through the Next.js API route before reaching Supabase Storage; very large recordings should move to a signed direct-upload flow later.
 - Realtime transcription requires browser microphone permissions and `OPENAI_API_KEY`.
 - OpenAI calls are server-side but not queued or retried through background jobs.
 - Email delivery is simulated only.

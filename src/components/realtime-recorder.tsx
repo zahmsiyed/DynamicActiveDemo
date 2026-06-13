@@ -190,7 +190,7 @@ export function RealtimeRecorder({
     dataChannel.addEventListener("close", () => {
       if (recorderState === "recording") {
         setStatusTone("info");
-        setMessage("Realtime channel closed. The local recording is still active.");
+        setMessage("Realtime channel closed. Browser recording is still active.");
       }
     });
 

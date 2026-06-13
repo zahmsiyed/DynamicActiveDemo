@@ -29,7 +29,15 @@ function readFallbackMessage(reason: string | null | undefined) {
   }
 
   if (reason === "stored_upload_unavailable") {
-    return "Demo fallback transcript saved because the local upload file was not available.";
+    return "Demo fallback transcript saved because the stored recording was not available.";
+  }
+
+  if (
+    reason === "missing_storage_path" ||
+    reason.startsWith("storage_download_failed") ||
+    reason.startsWith("storage_not_configured")
+  ) {
+    return "Demo fallback transcript saved because the recording could not be read from Supabase Storage.";
   }
 
   if (reason.startsWith("invalid_audio_file")) {

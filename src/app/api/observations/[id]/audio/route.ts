@@ -1,6 +1,6 @@
 // School admins upload a classroom recording here. The route validates the
-// file, stores it locally for the prototype, saves metadata, and creates the
-// final transcript from the stored upload.
+// file, stores it in Supabase Storage, saves metadata, and creates the final
+// transcript from the stored upload.
 
 import { Role } from "@prisma/client";
 import { NextResponse } from "next/server";
@@ -78,27 +78,36 @@ export async function POST(
   const storedFile = await persistAudioUploadFile(upload, observation.id);
 
   if (!storedFile.ok) {
-    return NextResponse.json({ error: storedFile.error }, { status: 400 });
+    const status = storedFile.error.startsWith("storage_") ? 503 : 400;
+
+    return NextResponse.json({ error: storedFile.error }, { status });
   }
 
-  const audioUpload = await db.audioUpload.upsert({
-    where: {
-      observationId: observation.id,
-    },
-    update: {
-      fileName: storedFile.fileName,
-      mimeType: storedFile.mimeType,
-      sizeBytes: storedFile.sizeBytes,
-      storagePath: storedFile.storagePath,
-    },
-    create: {
-      observationId: observation.id,
-      fileName: storedFile.fileName,
-      mimeType: storedFile.mimeType,
-      sizeBytes: storedFile.sizeBytes,
-      storagePath: storedFile.storagePath,
-    },
-  });
+  let audioUpload;
+
+  try {
+    audioUpload = await db.audioUpload.upsert({
+      where: {
+        observationId: observation.id,
+      },
+      update: {
+        fileName: storedFile.fileName,
+        mimeType: storedFile.mimeType,
+        sizeBytes: storedFile.sizeBytes,
+        storagePath: storedFile.storagePath,
+      },
+      create: {
+        observationId: observation.id,
+        fileName: storedFile.fileName,
+        mimeType: storedFile.mimeType,
+        sizeBytes: storedFile.sizeBytes,
+        storagePath: storedFile.storagePath,
+      },
+    });
+  } catch (error) {
+    await removeStoredAudioUpload(storedFile.storagePath);
+    throw error;
+  }
 
   await removeStoredAudioUpload(observation.audioUpload?.storagePath ?? null);
 

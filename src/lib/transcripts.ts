@@ -1,9 +1,6 @@
 // Transcript helpers for formatting, role-scoped reads, fallback transcript
 // generation, OpenAI transcription, and database persistence.
 
-import { readFile } from "fs/promises";
-import path from "path";
-
 import {
   ObservationStatus,
   SpeakerType,
@@ -14,6 +11,7 @@ import {
 import { hasExpectedAudioContainerSignature } from "@/lib/audio-uploads";
 import { getDb } from "@/lib/db";
 import { canViewObservation, type ObservationUser } from "@/lib/observations";
+import { downloadRecordingObject } from "@/lib/supabase-storage";
 
 // Every transcript query should return segments in classroom-time order.
 export const transcriptInclude = {
@@ -268,23 +266,6 @@ async function replaceObservationTranscript({
   });
 }
 
-// Resolve local upload paths without allowing arbitrary file reads.
-function resolveStoredUploadPath(storagePath: string | null) {
-  if (!storagePath) return null;
-
-  const uploadRoot = path.resolve(process.cwd(), ".uploads");
-  const filePath = path.resolve(
-    /* turbopackIgnore: true */ process.cwd(),
-    storagePath
-  );
-
-  if (filePath !== uploadRoot && !filePath.startsWith(`${uploadRoot}${path.sep}`)) {
-    return null;
-  }
-
-  return filePath;
-}
-
 // Route handlers can use this when OPENAI_API_KEY is absent or a real
 // transcription attempt fails.
 export async function createFallbackTranscriptFromUpload(
@@ -362,17 +343,16 @@ export async function transcribeUploadWithOpenAi({
 }) {
   if (!apiKey) return null;
 
-  const filePath = resolveStoredUploadPath(audioUpload.storagePath);
+  const storedObject = await downloadRecordingObject(audioUpload.storagePath);
 
-  if (!filePath) return null;
+  if (!storedObject.ok) {
+    throw new Error(storedObject.error);
+  }
 
-  const fileBytes = await readFile(filePath);
+  const fileBytes = storedObject.bytes;
 
   if (
-    !hasExpectedAudioContainerSignature(
-      Buffer.from(fileBytes),
-      audioUpload.mimeType
-    )
+    !hasExpectedAudioContainerSignature(fileBytes, audioUpload.mimeType)
   ) {
     throw new Error(
       "invalid_audio_file: Stored upload does not match a supported audio or video container."
@@ -493,7 +473,12 @@ export async function generateTranscriptForObservation(
       );
     }
   } catch (error) {
-    if (error instanceof Error && error.message.startsWith("invalid_audio_file")) {
+    if (
+      error instanceof Error &&
+      (error.message.startsWith("invalid_audio_file") ||
+        error.message.startsWith("storage_") ||
+        error.message.startsWith("missing_storage_path"))
+    ) {
       fallbackReason = error.message;
     } else {
       fallbackReason =
