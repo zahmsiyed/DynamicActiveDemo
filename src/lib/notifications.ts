@@ -1,6 +1,6 @@
-// The prototype stores in-app notifications and simulated email logs in SQLite
-// instead of sending real email. Keeping that logic here prevents route handlers
-// and dashboard UI from duplicating notification queries.
+// The prototype stores in-app notifications and simulated email logs in the
+// database instead of sending real email. Keeping that logic here prevents route
+// handlers and dashboard UI from duplicating notification queries.
 
 import { Role } from "@prisma/client";
 

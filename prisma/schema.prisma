@@ -6,11 +6,13 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// SQLite keeps the first prototype local and easy to inspect.
-// DATABASE_URL is defined in .env and .env.example.
+// Supabase provides the hosted PostgreSQL database for the prototype.
+// DATABASE_URL is the app connection string; DIRECT_URL is used by Prisma
+// migrations when a direct database connection is available.
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // Role controls what a user is allowed to see in the app.

@@ -2,7 +2,7 @@
 
 Teacher Evaluation Studio is a Next.js prototype for classroom observation workflows. It gives district admins, school admins, and teachers role-scoped dashboards for creating observations, reviewing rubric feedback, attaching classroom recordings, generating transcripts, producing coaching insights, and exporting PDF reports.
 
-The app is useful as a local demo and codebase reference. It is not production-ready without replacing the local database and file-storage pieces described below.
+The app is useful as a local demo and codebase reference. It is not production-ready without replacing local file storage and hardening the production controls described below.
 
 ## Contents
 
@@ -74,7 +74,7 @@ Implemented today:
 | UI | React 19, TypeScript, Server Components by default |
 | Client interactivity | Client components for login, logout, forms, uploads, transcription, insight generation, and realtime recording |
 | Styling | Tailwind CSS v4 through `@tailwindcss/postcss` and `src/app/globals.css` |
-| Database | Prisma ORM with local SQLite at `prisma/dev.db` |
+| Database | Prisma ORM with Supabase PostgreSQL |
 | Auth | Seeded users, `bcryptjs`, `jose`, signed HTTP-only JWT cookie |
 | AI transcription | OpenAI file transcription via `gpt-4o-transcribe-diarize` when configured |
 | Realtime transcription | OpenAI Realtime WebRTC session route using `gpt-realtime-whisper` |
@@ -92,7 +92,7 @@ Requirements:
 
 - Node 20 or newer.
 - npm.
-- SQLite CLI. `npm run db:init` pipes generated SQL into `sqlite3`.
+- A Supabase project with PostgreSQL connection strings.
 
 Install dependencies:
 
@@ -103,15 +103,23 @@ npm install
 Create a local environment file:
 
 ```bash
-cp .env.example .env
+cp .env.example .env.local
 ```
 
 Minimum local environment values:
 
 ```bash
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/postgres?sslmode=require"
+DIRECT_URL="postgresql://USER:PASSWORD@HOST:PORT/postgres?sslmode=require"
 JWT_SECRET="replace-this-with-a-long-random-secret"
 ```
+
+Supabase connection convention:
+
+- `DATABASE_URL` should use the Supabase pooler connection string for app/runtime queries.
+- `DIRECT_URL` should use the direct database host, usually `db.<project-ref>.supabase.co:5432`, for Prisma migrations.
+- Use the full connection strings copied from Supabase when possible. If a password is typed manually, URL-encode reserved characters such as `#`, `@`, `/`, `?`, and `%`.
+- Do not use the public Supabase API URL (`https://<project-ref>.supabase.co`) as either Prisma database URL.
 
 Optional OpenAI values:
 
@@ -120,11 +128,17 @@ OPENAI_API_KEY="sk-..."
 OPENAI_INSIGHT_MODEL="gpt-4o-mini"
 ```
 
-Initialize and seed the local database:
+Apply migrations and seed the database:
 
 ```bash
-npm run db:reset
+npm run db:deploy
+npm run db:seed
 ```
+
+Use `npm run db:migrate` only when you are intentionally creating a new
+development migration. For a fresh checkout with existing migrations,
+`npm run db:deploy` is the safer command because it applies committed migration
+files without opening an interactive migration workflow.
 
 Start the dev server:
 
@@ -156,12 +170,18 @@ Useful local commands:
 | `npm run build` | Build the Next.js app. |
 | `npm run start` | Start the production server after a build. |
 | `npm run lint` | Run ESLint. |
-| `npm run db:init` | Create local SQLite schema and generate Prisma Client. |
+| `npm run db:generate` | Generate Prisma Client from `prisma/schema.prisma`. |
+| `npm run db:migrate` | Create/apply development Prisma migrations. |
+| `npm run db:deploy` | Apply existing Prisma migrations without creating new ones. |
+| `npm run db:push` | Push the current schema without creating a migration. Use carefully for prototypes only. |
 | `npm run db:seed` | Seed deterministic demo data. |
-| `npm run db:reset` | Delete, recreate, and seed `prisma/dev.db`. |
-| `npm run db:check` | Print local database counts and a sample observation. |
+| `npm run db:reset` | Destructively reset the configured database, then seed demo data. Use only on disposable/dev databases. |
+| `npm run db:check` | Print database counts and a sample observation. |
 | `npm run test:smoke` | Run the local smoke script against `APP_BASE_URL`. |
 | `npm run db:studio` | Open Prisma Studio. |
+
+Database scripts run through `scripts/with-env.mjs` so Prisma and `tsx` scripts
+read `.env.local`, matching how Next.js loads local environment values.
 
 ## Demo Accounts
 
@@ -196,8 +216,10 @@ The seed file includes additional demo users for broader dashboard data.
 | `src/lib/insights.ts` | Zod insight schema, OpenAI insight generation, fallback generation, and persistence. |
 | `src/lib/pdf-report.ts` | Dependency-free PDF builder. |
 | `prisma/schema.prisma` | Database models, enums, relations, and uniqueness constraints. |
+| `prisma/migrations` | Committed PostgreSQL migrations applied with `npm run db:deploy`. |
 | `prisma/seed.ts` | Deterministic demo dataset. |
-| `scripts/check-db.ts` | Local database sanity check. |
+| `scripts/with-env.mjs` | Loads `.env.local` for Prisma and standalone scripts. |
+| `scripts/check-db.ts` | Configured database sanity check. |
 | `scripts/smoke-test.ts` | Local end-to-end smoke test. |
 
 ## How To Read The Code
@@ -255,6 +277,36 @@ Key enums:
 - `ObservationStatus`: `DRAFT`, `SCHEDULED`, `RECORDED`, `TRANSCRIBED`, `ANALYZED`, `FINALIZED`
 - `EvaluationCategory`: the six rubric categories shown in the observation form and report.
 - `SpeakerType`: `TEACHER`, `STUDENT`, `GROUP`, `UNKNOWN`
+
+## Database Workflow
+
+The app now uses Supabase PostgreSQL through Prisma. There are no committed
+SQLite database files, and local `.db` files are ignored as old workflow
+artifacts.
+
+For a fresh checkout:
+
+```bash
+npm install
+cp .env.example .env.local
+npm run db:deploy
+npm run db:seed
+npm run db:check
+```
+
+For a schema change:
+
+1. Edit `prisma/schema.prisma`.
+2. Run `npm run db:migrate -- --name short_descriptive_name`.
+3. Review the new SQL file under `prisma/migrations`.
+4. Run `npm run db:seed` only if demo data needs to be refreshed.
+5. Run `npm run db:check`, `npm run lint`, and `npm run build`.
+
+For an existing environment:
+
+- Use `npm run db:deploy` to apply committed migrations.
+- Avoid `npm run db:reset` unless the configured database is disposable. It
+  destroys and recreates data before reseeding.
 
 ## Auth And Role Scope
 
@@ -347,10 +399,10 @@ Insight generation:
 
 | State | Current owner | Notes |
 | --- | --- | --- |
-| Users, observations, scores, feedback, transcripts, insights, notifications, email logs | Prisma/SQLite | Local prototype database. |
+| Users, observations, scores, feedback, transcripts, insights, notifications, email logs | Prisma/Supabase PostgreSQL | Hosted prototype database. |
 | Session state | HTTP-only JWT cookie | Cookie stores a small signed payload; database remains source of truth for current user fields. |
 | Uploaded recordings | `.uploads/` local folder | Ignored by Git. Production should use object storage. |
-| Seed data | `prisma/seed.ts` | Deterministic local baseline, not production data logic. |
+| Seed data | `prisma/seed.ts` | Deterministic demo baseline, not production data logic. |
 | PDF reports | Generated on request | Not stored. |
 
 ## Testing
@@ -377,33 +429,31 @@ Missing today:
 
 ## Vercel And Production Readiness
 
-The app can use Vercel for the Next.js runtime, but the current persistence strategy is local-first.
+The app can use Vercel for the Next.js runtime, with Supabase PostgreSQL as the database.
 
 Before using Vercel for anything beyond a short-lived demo:
 
-1. Replace local SQLite with a hosted database or managed SQLite strategy.
-2. Add committed migrations and a production migration workflow.
-3. Replace `.uploads/` local file writes with object storage.
-4. Decide whether seeded auth is acceptable or replace it with a production auth provider.
-5. Add consent, retention, deletion, and audit policies for classroom recordings.
-6. Add real email delivery if notifications should leave the app.
-7. Add rate limits, abuse protection, observability, backups, and error monitoring.
+1. Use `npm run db:deploy` for production migration application.
+2. Replace `.uploads/` local file writes with object storage.
+3. Decide whether seeded auth is acceptable or replace it with a production auth provider.
+4. Add consent, retention, deletion, and audit policies for classroom recordings.
+5. Add real email delivery if notifications should leave the app.
+6. Add rate limits, abuse protection, observability, backups, and error monitoring.
 
 Deployment environment variables:
 
 | Variable | Required | Current use |
 | --- | --- | --- |
-| `DATABASE_URL` | Yes | Local value is `file:./dev.db`; production needs a durable database strategy and matching Prisma provider. |
+| `DATABASE_URL` | Yes | Supabase PostgreSQL connection used by the app. |
+| `DIRECT_URL` | Yes | Supabase PostgreSQL connection used by Prisma migrations. |
 | `JWT_SECRET` | Required in production | Signs and verifies session JWTs. |
 | `OPENAI_API_KEY` | Optional | Enables OpenAI transcription, Realtime, and insight generation. |
 | `OPENAI_INSIGHT_MODEL` | Optional | Overrides insight model; defaults to `gpt-4o-mini`. |
 
 ## Known Limitations
 
-- SQLite is local development only unless deliberately changed.
 - Local `.uploads/` storage is not production-safe.
 - There is no production auth provider.
-- There is no committed Prisma migration history.
 - Realtime transcription requires browser microphone permissions and `OPENAI_API_KEY`.
 - OpenAI calls are server-side but not queued or retried through background jobs.
 - Email delivery is simulated only.

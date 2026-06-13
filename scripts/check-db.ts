@@ -1,4 +1,4 @@
-// Verify that the local database has the records needed for the demo flow.
+// Verify that the configured database has the records needed for the demo flow.
 
 import { PrismaClient } from "@prisma/client";
 
