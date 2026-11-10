@@ -108,19 +108,31 @@ export async function getTeachersForSchoolAdmin(user: ObservationUser) {
 // This access check is used by the report page and observation API routes.
 // District admins see district observations, school admins see school
 // observations, and teachers see only their own observations.
-export function canViewObservation(user: ObservationUser, observation: {
-  teacherId: string; schoolId: string; districtId: string; status?: string;
-}) {
-  if (!user.districtId || user.districtId !== observation.districtId) return false;
+export function canViewObservation(
+  user: ObservationUser,
+  observation: {
+    teacherId: string;
+    schoolId: string;
+    districtId: string;
+    status?: string;
+  },
+) {
+  if (!user.districtId || user.districtId !== observation.districtId)
+    return false;
   if (user.role === "DISTRICT_ADMIN") return true;
-  if (user.role === "SCHOOL_ADMIN") return !!user.schoolId && user.schoolId === observation.schoolId;
-  return user.role === "TEACHER" && observation.teacherId === user.id && observation.status === "FINALIZED";
+  if (user.role === "SCHOOL_ADMIN")
+    return !!user.schoolId && user.schoolId === observation.schoolId;
+  return (
+    user.role === "TEACHER" &&
+    observation.teacherId === user.id &&
+    observation.status === "FINALIZED"
+  );
 }
 
 // Load one observation report only if the current user is allowed to see it.
 export async function getObservationReportForUser(
   observationId: string,
-  user: ObservationUser
+  user: ObservationUser,
 ) {
   const observation = await getDb().observation.findFirst({
     where: {

@@ -32,11 +32,8 @@ const dashboardObservationInclude = {
   scores: true,
   feedback: true,
   audioUpload: true,
-  transcription: {
-    include: {
-      segments: true,
-    },
-  },
+  // Dashboards only need presence, not full classroom transcript text.
+  transcription: { select: { id: true } },
   insight: true,
 } satisfies Prisma.ObservationInclude;
 
@@ -226,7 +223,10 @@ function readRecommendations(
 
 // District admins need the widest view: all schools, teachers, and observations
 // in their district.
-export async function getDistrictDashboardData(user: DashboardUser) {
+export async function getDistrictDashboardData(
+  user: DashboardUser,
+  cursor?: string,
+) {
   const db = getDb();
   const districtId = user.districtId ?? "";
 
@@ -257,14 +257,19 @@ export async function getDistrictDashboardData(user: DashboardUser) {
         where: { districtId, role: Role.SCHOOL_ADMIN },
       }),
       db.observation.findMany({
-        where: { districtId, deletingAt: null },
+        where: {
+          districtId,
+          deletingAt: null,
+          ...(cursor ? { id: { lt: cursor } } : {}),
+        },
         take: 100,
         include: dashboardObservationInclude,
-        orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+        orderBy: { id: "desc" },
       }),
     ]);
 
   return {
+    nextCursor: observations.length === 100 ? observations[99].id : null,
     metrics: [
       {
         label: "Schools",
@@ -317,7 +322,10 @@ export async function getDistrictDashboardData(user: DashboardUser) {
 
 // School admins need operational queues: upcoming observations, feedback work,
 // recording/upload status, and teacher coverage within one school.
-export async function getSchoolDashboardData(user: DashboardUser) {
+export async function getSchoolDashboardData(
+  user: DashboardUser,
+  cursor?: string,
+) {
   const db = getDb();
   const schoolId = user.schoolId ?? "";
 
@@ -335,10 +343,15 @@ export async function getSchoolDashboardData(user: DashboardUser) {
       },
     }),
     db.observation.findMany({
-      where: { schoolId, districtId: user.districtId ?? "", deletingAt: null },
+      where: {
+        schoolId,
+        districtId: user.districtId ?? "",
+        deletingAt: null,
+        ...(cursor ? { id: { lt: cursor } } : {}),
+      },
       take: 100,
       include: dashboardObservationInclude,
-      orderBy: [{ scheduledAt: "asc" }, { updatedAt: "desc" }],
+      orderBy: { id: "desc" },
     }),
   ]);
 
@@ -350,6 +363,7 @@ export async function getSchoolDashboardData(user: DashboardUser) {
   );
 
   return {
+    nextCursor: observations.length === 100 ? observations[99].id : null,
     metrics: [
       {
         label: "Teachers",
@@ -404,7 +418,10 @@ export async function getSchoolDashboardData(user: DashboardUser) {
 
 // Teachers need a personal view: latest reports, feedback, AI suggestions, and
 // growth signals from their own observation history.
-export async function getTeacherDashboardData(user: DashboardUser) {
+export async function getTeacherDashboardData(
+  user: DashboardUser,
+  cursor?: string,
+) {
   const db = getDb();
 
   const observations = await db.observation.findMany({
@@ -413,14 +430,11 @@ export async function getTeacherDashboardData(user: DashboardUser) {
       districtId: user.districtId ?? "",
       status: "FINALIZED",
       deletingAt: null,
+      ...(cursor ? { id: { lt: cursor } } : {}),
     },
     take: 100,
     include: dashboardObservationInclude,
-    orderBy: [
-      { observedAt: "desc" },
-      { scheduledAt: "desc" },
-      { updatedAt: "desc" },
-    ],
+    orderBy: { id: "desc" },
   });
 
   const finalized = observations.filter(
@@ -434,11 +448,12 @@ export async function getTeacherDashboardData(user: DashboardUser) {
     : null;
 
   return {
+    nextCursor: observations.length === 100 ? observations[99].id : null,
     metrics: [
       {
         label: "Reports",
         value: observations.length.toString(),
-        detail: "All observations",
+        detail: "Reports on this page",
       },
       {
         label: "Finalized",

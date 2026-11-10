@@ -1,0 +1,22 @@
+# Native Node processes; the web application is deployed separately on Vercel.
+# Create this secret group in the host dashboard before applying the blueprint.
+services:
+  - type: worker
+    name: dynamic-active-evaluations
+    runtime: node
+    buildCommand: npm ci && npx prisma generate
+    startCommand: npm run worker
+    envVars:
+      - fromGroup: dynamic-active-worker
+      - key: NODE_VERSION
+        value: 22.22.0
+  - type: cron
+    name: dynamic-active-retention
+    runtime: node
+    schedule: "0 * * * *"
+    buildCommand: npm ci && npx prisma generate
+    startCommand: npm run maintenance
+    envVars:
+      - fromGroup: dynamic-active-worker
+      - key: NODE_VERSION
+        value: 22.22.0

@@ -385,12 +385,14 @@ model StageAttempt {
 
 /// Published snapshots survive explicit reopening and subsequent revisions.
 model ReportRevision {
-  id            String      @id @default(cuid())
-  observationId String
-  observation   Observation @relation(fields: [observationId], references: [id], onDelete: Cascade)
-  snapshot      Json
-  createdAt     DateTime    @default(now())
-  approvedBy    String
+  id              String      @id @default(cuid())
+  observationId   String
+  observation     Observation @relation(fields: [observationId], references: [id], onDelete: Cascade)
+  snapshot        Json
+  // Copies expire with their source transcript, not their publication date.
+  sourceCreatedAt DateTime    @default(now())
+  createdAt       DateTime    @default(now())
+  approvedBy      String
 }
 
 /// Security and lifecycle events contain identifiers, never transcript text.

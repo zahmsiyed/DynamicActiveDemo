@@ -1,3 +1,4 @@
+import { authCookieOptions } from "@/lib/supabase/cookies";
 // Request-local auth clients carry cookies; privileged clients never do.
 import { createServerClient } from "@supabase/ssr";
 export { adminClient } from "./admin";
@@ -9,6 +10,7 @@ export async function authClient() {
     process.env.SUPABASE_URL!,
     process.env.SUPABASE_PUBLISHABLE_KEY!,
     {
+      cookieOptions: authCookieOptions(),
       cookies: {
         getAll: () => store.getAll(),
         setAll: (items) => {

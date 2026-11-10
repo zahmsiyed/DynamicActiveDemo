@@ -129,12 +129,28 @@ export async function maintainRetention() {
       const rows = await db.observation.findMany({
         where: {
           districtId: district.id,
-          runs: {
-            some: {
-              createdAt: { lt: cutoff(district.transcriptRetentionDays) },
-              transcript: { not: Prisma.DbNull },
+          OR: [
+            {
+              runs: {
+                some: {
+                  createdAt: { lt: cutoff(district.transcriptRetentionDays) },
+                  transcript: { not: Prisma.DbNull },
+                },
+              },
             },
-          },
+            // A revision can outlive a run checkpoint, so scan retained copies
+            // independently and anchor expiry to the original source timestamp.
+            {
+              revisions: {
+                some: {
+                  sourceCreatedAt: {
+                    lt: cutoff(district.transcriptRetentionDays),
+                  },
+                  snapshot: { path: ["transcript"], not: Prisma.AnyNull },
+                },
+              },
+            },
+          ],
         },
         take: 100,
       });
@@ -170,7 +186,9 @@ export async function maintainRetention() {
           const revisions = await tx.reportRevision.findMany({
             where: {
               observationId: row.id,
-              createdAt: { lt: cutoff(district.transcriptRetentionDays!) },
+              sourceCreatedAt: {
+                lt: cutoff(district.transcriptRetentionDays!),
+              },
             },
           });
           for (const revision of revisions) {

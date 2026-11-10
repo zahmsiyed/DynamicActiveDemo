@@ -68,6 +68,7 @@ export const POST = api(
         data: {
           observationId: id,
           approvedBy: user.id,
+          sourceCreatedAt: run.createdAt,
           snapshot: {
             scores: body.scores,
             feedback: body.feedback,

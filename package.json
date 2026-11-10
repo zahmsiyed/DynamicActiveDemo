@@ -25,7 +25,7 @@
     "district:create": "node scripts/with-env.mjs tsx scripts/provision-district.ts",
     "queue:status": "node scripts/with-env.mjs tsx scripts/queue-status.ts",
     "benchmark": "node scripts/with-env.mjs tsx scripts/benchmark.ts",
-    "format:check": "prettier --check src/lib/jobs src/lib/lifecycle src/lib/access.ts src/lib/http.ts src/components/evaluation-workflow.tsx tests playwright.config.ts proxy.ts"
+    "format:check": "prettier --check src/lib/jobs src/lib/lifecycle src/lib/access.ts src/lib/http.ts src/components/evaluation-workflow.tsx tests playwright.config.ts src/proxy.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",

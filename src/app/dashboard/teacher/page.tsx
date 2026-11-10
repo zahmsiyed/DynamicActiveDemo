@@ -1,5 +1,6 @@
 // This server component is protected by role and then loads teacher-only data.
 
+import { DashboardPagination } from "@/components/dashboard-pagination";
 import { DashboardShell } from "@/components/dashboard-shell";
 import {
   FeedbackList,
@@ -10,9 +11,14 @@ import {
 import { requireCurrentUser } from "@/lib/auth";
 import { getTeacherDashboardData } from "@/lib/dashboard-data";
 
-export default async function TeacherDashboardPage() {
+export default async function TeacherDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cursor?: string }>;
+}) {
   const user = await requireCurrentUser(["TEACHER"]);
-  const dashboard = await getTeacherDashboardData(user);
+  const { cursor } = await searchParams;
+  const dashboard = await getTeacherDashboardData(user, cursor);
 
   return (
     <DashboardShell
@@ -22,6 +28,11 @@ export default async function TeacherDashboardPage() {
       title="My observation growth"
       description="Review finalized reports, feedback history, transcript insight summaries, and recommendations from classroom observations."
     >
+      <DashboardPagination
+        path="/dashboard/teacher"
+        nextCursor={dashboard.nextCursor}
+        hasCursor={!!cursor}
+      />
       <MetricGrid metrics={dashboard.metrics} />
 
       <section className="rounded-[1.5rem] border border-brand-line bg-brand-card p-5 shadow-sm">

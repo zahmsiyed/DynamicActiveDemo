@@ -1,3 +1,4 @@
+import { authCookieOptions } from "@/lib/supabase/cookies";
 // Refresh Supabase cookies before Server Components render. APIs enforce their
 // own identity/record checks; this proxy additionally blocks cross-origin writes.
 import { createServerClient } from "@supabase/ssr";
@@ -27,6 +28,7 @@ export async function proxy(request: NextRequest) {
     process.env.SUPABASE_URL,
     process.env.SUPABASE_PUBLISHABLE_KEY,
     {
+      cookieOptions: authCookieOptions(),
       cookies: {
         getAll: () => request.cookies.getAll(),
         setAll: (items) => {
