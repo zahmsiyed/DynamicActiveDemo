@@ -520,6 +520,7 @@ export async function getObservationTranscriptForUser(
     select: {
       id: true,
       title: true,
+      status: true,
       teacherId: true,
       schoolId: true,
       districtId: true,

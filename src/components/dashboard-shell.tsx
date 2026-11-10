@@ -46,6 +46,7 @@ export async function DashboardShell({
     notificationCenter.notifications.length > 0 ||
     notificationCenter.emailLogs.length > 0;
   const navLinks = [
+    ...(user.role === "DISTRICT_ADMIN" ? [{ href: "/settings", label: "District settings", variant: "secondary" }] : []),
     ...(!hideDashboardLink
       ? [
           {

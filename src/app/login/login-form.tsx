@@ -6,26 +6,6 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState, useTransition } from "react";
 
-// These are the seeded demo accounts. Clicking a button fills the form so the
-// auth flow is easy to test while learning.
-const demoAccounts = [
-  {
-    role: "District Admin",
-    email: "district@example.com",
-    password: "password123",
-  },
-  {
-    role: "School Admin",
-    email: "school@example.com",
-    password: "password123",
-  },
-  {
-    role: "Teacher",
-    email: "teacher@example.com",
-    password: "password123",
-  },
-];
-
 const productSignals = [
   { label: "Reports ready", value: "x" },
   { label: "AI insights", value: "x" },
@@ -78,8 +58,8 @@ async function readLoginResult(response: Response) {
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState("teacher@example.com");
-  const [password, setPassword] = useState("password123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -129,7 +109,7 @@ export function LoginForm() {
     <div className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-7xl items-center gap-8 lg:grid-cols-[1.05fr_0.95fr]">
       <section className="py-8">
         <div className="inline-flex rounded-full border border-brand-line bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-brand-coral">
-          Dynamic Active prototype
+          DynamicActive
         </div>
 
         <h1 className="mt-6 max-w-3xl text-5xl font-semibold tracking-tight text-brand-ink sm:text-6xl">
@@ -138,7 +118,7 @@ export function LoginForm() {
 
         <p className="mt-5 max-w-2xl text-lg leading-8 text-brand-muted">
           Sign in as a district admin, school admin, or teacher to review the
-          same seeded workflow through each role&apos;s lens.
+          classroom evaluation workflow through each role&apos;s lens.
         </p>
 
         <div className="mt-8 grid max-w-2xl gap-3 sm:grid-cols-3">
@@ -164,12 +144,12 @@ export function LoginForm() {
                 Observation signal
               </p>
               <p className="mt-1 text-sm text-brand-muted">
-                Seeded reports include scores, feedback, transcripts, and AI
+                Reports include scores, feedback, transcripts, and AI
                 recommendations.
               </p>
             </div>
             <span className="rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-coral-dark">
-              Local demo
+              Human-reviewed reports
             </span>
           </div>
 
@@ -195,14 +175,13 @@ export function LoginForm() {
       <section className="rounded-[2rem] border border-brand-line bg-brand-card p-6 shadow-sm sm:p-8">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-coral">
-            Secure demo login
+            Secure login
           </p>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-brand-ink">
-            Sign in with a seeded account
+            Sign in to your district
           </h2>
           <p className="mt-3 text-sm leading-6 text-brand-muted">
-            The app checks the database user, verifies the hashed password,
-            signs a secure cookie, and redirects by role.
+            Use the account invitation sent by your district administrator.
           </p>
         </div>
 
@@ -246,30 +225,7 @@ export function LoginForm() {
           </button>
         </form>
 
-        <div className="mt-7 border-t border-brand-line pt-5">
-          <p className="text-sm font-semibold text-brand-ink">Demo accounts</p>
-          <div className="mt-3 grid gap-2">
-            {demoAccounts.map((account) => (
-              <button
-                key={account.email}
-                type="button"
-                className="rounded-2xl border border-brand-line bg-white px-4 py-3 text-left text-sm transition hover:border-brand-coral hover:bg-brand-soft"
-                onClick={() => {
-                  setEmail(account.email);
-                  setPassword(account.password);
-                  setError("");
-                }}
-              >
-                <span className="font-semibold text-brand-ink">
-                  {account.role}
-                </span>
-                <span className="mt-1 block text-brand-muted">
-                  {account.email}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
+        <a className="mt-6 block underline" href="/recover">Forgot password?</a>
       </section>
     </div>
   );

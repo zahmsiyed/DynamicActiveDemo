@@ -60,9 +60,14 @@ enum InsightIllustration {
 
 /// A district owns schools, users, and observations across the whole system.
 model District {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
+  id                      String   @id @default(cuid())
+  name                    String
+  // Uploads stay disabled until the district chooses a retention policy.
+  recordingRetentionDays  Int?
+  transcriptRetentionDays Int?
+  reportRetentionDays     Int?
+  policyVersion           Int      @default(0)
+  createdAt               DateTime @default(now())
 
   // A district has many schools.
   schools School[]
@@ -89,6 +94,8 @@ model School {
 
   // Observations happen inside one school.
   observations Observation[]
+
+  @@unique([id, districtId])
 }
 
 /// A user can be a district admin, school admin, or teacher.
@@ -96,7 +103,10 @@ model User {
   id           String   @id @default(cuid())
   name         String
   email        String   @unique
-  passwordHash String
+  passwordHash String   @default("")
+  // Auth identity is separate from application role and tenant membership.
+  authId       String?  @unique @db.Uuid
+  active       Boolean  @default(true)
   role         Role
   title        String?
   districtId   String?
@@ -124,24 +134,28 @@ model User {
   // Notifications and email logs support dashboard and report-ready demo flows.
   notifications Notification[]
   emailLogs     EmailLog[]
+
+  @@unique([id, schoolId, districtId])
 }
 
 /// An observation is the central record tying together teacher, evaluator, scores, transcript, and insights.
 model Observation {
-  id          String            @id @default(cuid())
-  title       String
-  subject     String
-  gradeLevel  String
-  status      ObservationStatus @default(DRAFT)
-  scheduledAt DateTime?
-  observedAt  DateTime?
-  summary     String?
-  teacherId   String
-  observerId  String
-  schoolId    String
-  districtId  String
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id               String            @id @default(cuid())
+  title            String
+  subject          String
+  gradeLevel       String
+  status           ObservationStatus @default(DRAFT)
+  scheduledAt      DateTime?
+  observedAt       DateTime?
+  summary          String?
+  teacherId        String
+  observerId       String
+  schoolId         String
+  districtId       String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  // Incremented for each completed upload; workers must match this version.
+  recordingVersion Int               @default(0)
 
   // The teacher being observed.
   teacher User @relation("ObservationTeacher", fields: [teacherId], references: [id])
@@ -161,6 +175,9 @@ model Observation {
   insight       Insight?
   notifications Notification[]
   emailLogs     EmailLog[]
+  recordings    RecordingVersion[]
+  runs          EvaluationRun[]
+  revisions     ReportRevision[]
 }
 
 /// One rubric score for one observation category.
@@ -296,4 +313,105 @@ model EmailLog {
 
   // Some emails are attached to a specific observation/report.
   observation Observation? @relation(fields: [observationId], references: [id], onDelete: Cascade)
+}
+
+// Run state is independent of publication state: analysis never publishes a report.
+enum RunState {
+  QUEUED
+  TRANSCRIBING
+  ANALYZING
+  READY
+  FAILED
+  SUPERSEDED
+}
+
+/// Immutable object metadata. Pending uploads are reclaimed after expiry.
+model RecordingVersion {
+  id            String          @id @default(cuid())
+  observationId String
+  observation   Observation     @relation(fields: [observationId], references: [id], onDelete: Cascade)
+  storagePath   String          @unique
+  fileName      String
+  mimeType      String
+  sizeBytes     Int
+  uploadedBy    String
+  policyVersion Int
+  authorizedAt  DateTime
+  createdAt     DateTime        @default(now())
+  completedAt   DateTime?
+  expiresAt     DateTime
+  deletedAt     DateTime?
+  runs          EvaluationRun[]
+}
+
+/// Durable processing checkpoint; a fencing token rejects expired workers.
+model EvaluationRun {
+  id            String           @id @default(cuid())
+  observationId String
+  observation   Observation      @relation(fields: [observationId], references: [id], onDelete: Cascade)
+  recordingId   String
+  recording     RecordingVersion @relation(fields: [recordingId], references: [id])
+  inputVersion  Int
+  rubricVersion String           @default("v1")
+  state         RunState         @default(QUEUED)
+  attempts      Int              @default(0)
+  leaseToken    String?
+  leaseUntil    DateTime?
+  transcript    Json?
+  analysis      Json?
+  errorCode     String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  finishedAt    DateTime?
+  stages        StageAttempt[]
+
+  @@unique([recordingId, rubricVersion])
+  @@index([state, leaseUntil])
+}
+
+/// Append-only timing and error metadata, with no classroom content.
+model StageAttempt {
+  id         String        @id @default(cuid())
+  runId      String
+  run        EvaluationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  number     Int
+  stage      String
+  startedAt  DateTime      @default(now())
+  finishedAt DateTime?
+  errorCode  String?
+}
+
+/// Published snapshots survive explicit reopening and subsequent revisions.
+model ReportRevision {
+  id            String      @id @default(cuid())
+  observationId String
+  observation   Observation @relation(fields: [observationId], references: [id], onDelete: Cascade)
+  snapshot      Json
+  createdAt     DateTime    @default(now())
+  approvedBy    String
+}
+
+/// Security and lifecycle events contain identifiers, never transcript text.
+model AuditEvent {
+  id         String   @id @default(cuid())
+  districtId String
+  actorId    String
+  action     String
+  recordId   String
+  createdAt  DateTime @default(now())
+
+  @@index([districtId, createdAt])
+}
+
+/// Shared limits work across web replicas; expired rows are removed by maintenance.
+model RequestLimit {
+  key       String   @id
+  count     Int      @default(1)
+  expiresAt DateTime
+}
+
+/// Worker health is durable so the web process can detect stopped workers.
+model WorkerHeartbeat {
+  id     String   @id
+  seenAt DateTime @default(now())
 }

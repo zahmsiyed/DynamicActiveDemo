@@ -1,3 +1,4 @@
+import { observationScope } from "@/lib/access";
 // School admins submit the observation form here. The route validates the
 // payload, checks teacher scope, creates rubric scores, and saves feedback.
 
@@ -18,7 +19,7 @@ import {
   readText,
 } from "@/lib/observation-input";
 
-export async function GET() {
+export async function GET(request: Request) {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -26,15 +27,13 @@ export async function GET() {
   }
 
   // Each role receives only observations inside its allowed scope.
-  const where =
-    user.role === Role.DISTRICT_ADMIN
-      ? { districtId: user.districtId ?? "" }
-      : user.role === Role.SCHOOL_ADMIN
-        ? { schoolId: user.schoolId ?? "" }
-        : { teacherId: user.id };
+  const where = observationScope(user);
 
+  const cursor = new URL(request.url).searchParams.get("cursor");
   const observations = await getDb().observation.findMany({
     where,
+    take: 50,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     select: {
       id: true,
       title: true,
@@ -61,10 +60,10 @@ export async function GET() {
         },
       },
     },
-    orderBy: [{ updatedAt: "desc" }, { scheduledAt: "desc" }],
+    orderBy: { id: "desc" },
   });
 
-  return NextResponse.json({ observations });
+  return NextResponse.json({ observations, nextCursor: observations.length === 50 ? observations[49].id : null });
 }
 
 export async function POST(request: Request) {

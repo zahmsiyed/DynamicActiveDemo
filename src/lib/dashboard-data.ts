@@ -243,7 +243,8 @@ export async function getDistrictDashboardData(user: DashboardUser) {
     }),
     db.observation.findMany({
       where: { districtId },
-      include: dashboardObservationInclude,
+      take: 100,
+    include: dashboardObservationInclude,
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
     }),
   ]);
@@ -294,7 +295,8 @@ export async function getSchoolDashboardData(user: DashboardUser) {
       where: { schoolId, role: Role.TEACHER },
       include: {
         observedLessons: {
-          include: dashboardObservationInclude,
+          take: 100,
+    include: dashboardObservationInclude,
         },
       },
       orderBy: {
@@ -302,8 +304,9 @@ export async function getSchoolDashboardData(user: DashboardUser) {
       },
     }),
     db.observation.findMany({
-      where: { schoolId },
-      include: dashboardObservationInclude,
+      where: { schoolId, districtId: user.districtId ?? "" },
+      take: 100,
+    include: dashboardObservationInclude,
       orderBy: [{ scheduledAt: "asc" }, { updatedAt: "desc" }],
     }),
   ]);
@@ -361,7 +364,8 @@ export async function getTeacherDashboardData(user: DashboardUser) {
   const db = getDb();
 
   const observations = await db.observation.findMany({
-    where: { teacherId: user.id },
+    where: { teacherId: user.id, districtId: user.districtId ?? "", status: "FINALIZED" },
+    take: 100,
     include: dashboardObservationInclude,
     orderBy: [{ observedAt: "desc" }, { scheduledAt: "desc" }, { updatedAt: "desc" }],
   });
