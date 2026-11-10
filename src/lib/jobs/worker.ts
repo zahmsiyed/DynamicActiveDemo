@@ -88,6 +88,7 @@ export async function workOne(providers: Providers = { transcribe, analyze }) {
   try {
     if (attempt > maxAttempts) throw new ProcessingError("attempts_exhausted");
     if (
+      run.observation.deletingAt ||
       run.observation.recordingVersion !== run.inputVersion ||
       run.observation.status === "FINALIZED" ||
       run.recording.deletedAt

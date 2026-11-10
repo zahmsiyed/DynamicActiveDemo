@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 // A tombstone prevents new processing before external Storage deletion starts.
 // Failed deletions remain durable and are retried by the next maintenance run.
 import { getDb } from "@/lib/db";
+import { archiveDeadLetters } from "@/lib/jobs/queue";
 import { adminClient } from "@/lib/supabase/admin";
 export async function purgeRecording(id: string) {
   const db = getDb();
@@ -78,6 +79,13 @@ export async function deleteObservation(
     await tx.auditEvent.create({
       data: { districtId, actorId, action: "REPORT_DELETED", recordId: id },
     });
+    // A removed report has no retry UI. Archive its dead-letter messages so
+    // queue alerts do not keep pointing at a record that no longer exists.
+    const runs = await tx.evaluationRun.findMany({
+      where: { observationId: id },
+      select: { id: true },
+    });
+    for (const run of runs) await archiveDeadLetters(tx, run.id);
     await tx.observation.delete({ where: { id } });
   });
   return true;
