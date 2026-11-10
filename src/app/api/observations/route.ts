@@ -10,7 +10,6 @@ import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { sendReportReadyNotifications } from "@/lib/notifications";
 import {
   parseDateInput,
   parseObservationStatus,
@@ -110,12 +109,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: scoreError }, { status: 400 });
   }
 
-  if (status === ObservationStatus.FINALIZED && !feedback) {
-    return NextResponse.json(
-      { error: "Finalized reports need written feedback for the teacher." },
-      { status: 400 }
-    );
-  }
+  if (status === ObservationStatus.FINALIZED) return NextResponse.json({ error: "Create a scheduled observation; finalize after review." }, { status: 400 });
 
   const db = getDb();
   const teacher = await db.user.findUnique({
@@ -149,7 +143,7 @@ export async function POST(request: Request) {
       gradeLevel,
       status,
       scheduledAt,
-      observedAt: status === ObservationStatus.FINALIZED ? scheduledAt : null,
+      observedAt: null,
       summary: summary || null,
       teacherId: teacher.id,
       observerId: user.id,
@@ -177,10 +171,6 @@ export async function POST(request: Request) {
       status: true,
     },
   });
-
-  if (observation.status === ObservationStatus.FINALIZED) {
-    await sendReportReadyNotifications(observation.id);
-  }
 
   return NextResponse.json(
     {

@@ -50,7 +50,7 @@ export function ObservationForm({ teachers, rubric }: ObservationFormProps) {
   const [subject, setSubject] = useState("Science");
   const [gradeLevel, setGradeLevel] = useState("7");
   const [scheduledAt, setScheduledAt] = useState(todayInputValue());
-  const [status, setStatus] = useState<"SCHEDULED" | "FINALIZED">("FINALIZED");
+  const [status, setStatus] = useState<"SCHEDULED" | "FINALIZED">("SCHEDULED");
   const [summary, setSummary] = useState(
     "Students worked through a lesson segment while the observer collected evidence."
   );

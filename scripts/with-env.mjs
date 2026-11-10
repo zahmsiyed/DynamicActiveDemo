@@ -48,9 +48,9 @@ if (!command) {
 }
 
 const env = {
-  ...process.env,
   ...parseEnvFile(".env"),
   ...parseEnvFile(".env.local"),
+  ...process.env,
 };
 
 const localBinary = join("node_modules", ".bin", command);

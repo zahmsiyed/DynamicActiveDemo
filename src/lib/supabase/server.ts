@@ -1,6 +1,6 @@
 // Request-local auth clients carry cookies; privileged clients never do.
 import { createServerClient } from "@supabase/ssr";
-import { createClient } from "@supabase/supabase-js";
+export { adminClient } from "./admin";
 import { cookies } from "next/headers";
 
 export async function authClient() {
@@ -16,9 +16,3 @@ export async function authClient() {
   });
 }
 
-// Only server code may import this client. It bypasses Storage/Auth policies.
-export function adminClient() {
-  return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}

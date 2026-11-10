@@ -6,6 +6,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // React Compiler is enabled by the scaffold for safer automatic optimization.
   reactCompiler: true,
+  turbopack: { root: process.cwd() },
 };
 
 // Next.js reads this default export when it starts the dev server or builds.
