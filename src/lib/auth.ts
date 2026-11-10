@@ -5,14 +5,22 @@ import { authClient } from "@/lib/supabase/server";
 import { roleDashboardPath, type AppRole } from "@/lib/session";
 
 export async function getCurrentUser() {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_PUBLISHABLE_KEY)
+    return null;
   const client = await authClient();
   const { data, error } = await client.auth.getUser();
   if (error || !data.user) return null;
   const user = await getDb().user.findUnique({
     where: { authId: data.user.id },
     select: {
-      id: true, name: true, email: true, role: true, title: true, active: true,
-      districtId: true, schoolId: true,
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      title: true,
+      active: true,
+      districtId: true,
+      schoolId: true,
       district: { select: { id: true, name: true } },
       school: { select: { id: true, name: true } },
     },
@@ -23,6 +31,7 @@ export async function getCurrentUser() {
 export async function requireCurrentUser(allowedRoles?: AppRole[]) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (allowedRoles && !allowedRoles.includes(user.role)) redirect(roleDashboardPath(user.role));
+  if (allowedRoles && !allowedRoles.includes(user.role))
+    redirect(roleDashboardPath(user.role));
   return user;
 }

@@ -16,15 +16,15 @@ async function main() {
     transcriptSegments,
     insights,
   ] = await Promise.all([
-      prisma.district.count(),
-      prisma.school.count(),
-      prisma.user.count(),
-      prisma.observation.count(),
-      prisma.audioUpload.count(),
-      prisma.transcription.count(),
-      prisma.transcriptSegment.count(),
-      prisma.insight.count(),
-    ]);
+    prisma.district.count(),
+    prisma.school.count(),
+    prisma.user.count(),
+    prisma.observation.count(),
+    prisma.audioUpload.count(),
+    prisma.transcription.count(),
+    prisma.transcriptSegment.count(),
+    prisma.insight.count(),
+  ]);
 
   // Load one rich observation to prove relationships are connected correctly.
   const sampleObservation = await prisma.observation.findFirst({
@@ -66,17 +66,19 @@ async function main() {
     console.log(`- School: ${sampleObservation.school.name}`);
     console.log(`- Scores: ${sampleObservation.scores.length}`);
     console.log(
-      `- Transcript segments: ${sampleObservation.transcription?.segments.length ?? 0}`
+      `- Transcript segments: ${sampleObservation.transcription?.segments.length ?? 0}`,
     );
     console.log(
-      `- Transcript provider: ${sampleObservation.transcription?.provider ?? "none"}`
+      `- Transcript provider: ${sampleObservation.transcription?.provider ?? "none"}`,
     );
     console.log(
-      `- Audio upload: ${sampleObservation.audioUpload?.fileName ?? "none"}`
+      `- Audio upload: ${sampleObservation.audioUpload?.fileName ?? "none"}`,
     );
-    console.log(`- Has AI insight: ${sampleObservation.insight ? "yes" : "no"}`);
     console.log(
-      `- Insight illustration: ${sampleObservation.insight?.illustrationKey ?? "none"}`
+      `- Has AI insight: ${sampleObservation.insight ? "yes" : "no"}`,
+    );
+    console.log(
+      `- Insight illustration: ${sampleObservation.insight?.illustrationKey ?? "none"}`,
     );
   }
 }

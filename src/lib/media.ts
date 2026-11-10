@@ -97,7 +97,7 @@ function hasMp4FileTypeBox(bytes: Buffer) {
 // catch obvious non-audio files before we store them or send them to OpenAI.
 export function hasExpectedAudioContainerSignature(
   bytes: Buffer,
-  mimeType: string
+  mimeType: string,
 ) {
   if (mimeType === "audio/wav" || mimeType === "audio/x-wav") {
     return (
@@ -130,7 +130,7 @@ export function hasExpectedAudioContainerSignature(
 
 // Validate a browser File before reading or writing its bytes.
 export function validateAudioUploadFile(
-  file: File | null
+  file: File | null,
 ): AudioUploadValidationResult {
   if (!file) {
     return {

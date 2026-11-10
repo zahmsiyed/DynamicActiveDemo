@@ -1,9 +1,8 @@
 // This server component renders timestamped transcript segments, keeps the
-// fallback button available, and marks transcript rows used by AI highlights.
+// report readable, and marks transcript rows used by AI highlights.
 
 import { SpeakerType } from "@prisma/client";
 
-import { TranscriptFallbackButton } from "@/components/transcript-fallback-button";
 import {
   formatTranscriptRange,
   formatTranscriptTime,
@@ -30,8 +29,6 @@ type TranscriptView = {
 };
 
 type TranscriptViewerProps = {
-  observationId: string;
-  canCreateFallback: boolean;
   highlightedStartMs?: number[];
   transcription: TranscriptView | null;
 };
@@ -47,16 +44,15 @@ function formatConfidence(confidence: number | null) {
 // generated values that land just inside the speaker turn.
 function isHighlightedSegment(
   segment: Pick<TranscriptSegmentView, "endMs" | "startMs">,
-  highlightedStartMs: number[]
+  highlightedStartMs: number[],
 ) {
   return highlightedStartMs.some(
-    (startMs) => startMs >= segment.startMs - 500 && startMs <= segment.endMs + 500
+    (startMs) =>
+      startMs >= segment.startMs - 500 && startMs <= segment.endMs + 500,
   );
 }
 
 export function TranscriptViewer({
-  observationId,
-  canCreateFallback,
   highlightedStartMs = [],
   transcription,
 }: TranscriptViewerProps) {
@@ -67,17 +63,13 @@ export function TranscriptViewer({
         <p className="mt-3 max-w-3xl text-sm leading-6 text-brand-muted">
           No timestamped transcript is stored for this observation yet.
         </p>
-
-        {canCreateFallback ? (
-          <TranscriptFallbackButton observationId={observationId} />
-        ) : null}
       </section>
     );
   }
 
   const durationMs = transcriptDurationMs(transcription.segments);
   const speakerCount = new Set(
-    transcription.segments.map((segment) => segment.speakerLabel)
+    transcription.segments.map((segment) => segment.speakerLabel),
   ).size;
 
   return (
@@ -109,7 +101,9 @@ export function TranscriptViewer({
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-muted">
             Speakers
           </p>
-          <p className="mt-2 font-mono text-lg text-brand-ink">{speakerCount}</p>
+          <p className="mt-2 font-mono text-lg text-brand-ink">
+            {speakerCount}
+          </p>
         </div>
 
         <div className="rounded-[1.25rem] border border-brand-line bg-white p-4">
@@ -127,7 +121,10 @@ export function TranscriptViewer({
 
       <div className="divide-y divide-brand-line">
         {transcription.segments.map((segment) => {
-          const isHighlighted = isHighlightedSegment(segment, highlightedStartMs);
+          const isHighlighted = isHighlightedSegment(
+            segment,
+            highlightedStartMs,
+          );
 
           return (
             <article

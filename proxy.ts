@@ -8,27 +8,42 @@ export async function proxy(request: NextRequest) {
   const expectedOrigin = process.env.APP_ORIGIN || request.nextUrl.origin;
   if (mutation && request.nextUrl.pathname.startsWith("/api/")) {
     const origin = request.headers.get("origin");
-    if ((origin && origin !== expectedOrigin) || request.headers.get("sec-fetch-site") === "cross-site") {
-      return NextResponse.json({ error: "Cross-origin request denied." }, { status: 403 });
+    if (
+      (origin && origin !== expectedOrigin) ||
+      request.headers.get("sec-fetch-site") === "cross-site"
+    ) {
+      return NextResponse.json(
+        { error: "Cross-origin request denied." },
+        { status: 403 },
+      );
     }
   }
   let response = NextResponse.next({ request });
   response.headers.set("Cache-Control", "private, no-store");
   // Public build/health pages remain available without configured credentials.
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_PUBLISHABLE_KEY) return response;
-  const client = createServerClient(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
-    cookies: {
-      getAll: () => request.cookies.getAll(),
-      setAll: (items) => {
-        items.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
-        response.headers.set("Cache-Control", "private, no-store");
-        items.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_PUBLISHABLE_KEY)
+    return response;
+  const client = createServerClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_PUBLISHABLE_KEY,
+    {
+      cookies: {
+        getAll: () => request.cookies.getAll(),
+        setAll: (items) => {
+          items.forEach(({ name, value }) => request.cookies.set(name, value));
+          response = NextResponse.next({ request });
+          response.headers.set("Cache-Control", "private, no-store");
+          items.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options),
+          );
+        },
       },
     },
-  });
+  );
   const { data } = await client.auth.getUser();
-  const protectedPage = /^\/(dashboard|observations|settings)(\/|$)/.test(request.nextUrl.pathname);
+  const protectedPage = /^\/(dashboard|observations|settings)(\/|$)/.test(
+    request.nextUrl.pathname,
+  );
   if (protectedPage && !data.user) {
     const url = new URL("/login", request.url);
     url.searchParams.set("next", request.nextUrl.pathname);
@@ -38,4 +53,6 @@ export async function proxy(request: NextRequest) {
   }
   return response;
 }
-export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"] };
+export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+};

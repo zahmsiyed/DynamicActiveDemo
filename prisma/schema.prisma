@@ -156,6 +156,7 @@ model Observation {
   updatedAt        DateTime          @updatedAt
   // Incremented for each completed upload; workers must match this version.
   recordingVersion Int               @default(0)
+  deletingAt       DateTime?
 
   // The teacher being observed.
   teacher User @relation("ObservationTeacher", fields: [teacherId], references: [id])
@@ -341,6 +342,7 @@ model RecordingVersion {
   completedAt   DateTime?
   expiresAt     DateTime
   deletedAt     DateTime?
+  purgedAt      DateTime?
   runs          EvaluationRun[]
 }
 

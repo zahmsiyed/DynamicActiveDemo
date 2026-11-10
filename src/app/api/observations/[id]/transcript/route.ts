@@ -4,9 +4,7 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth";
-import {
-  getObservationTranscriptForUser,
-} from "@/lib/transcripts";
+import { getObservationTranscriptForUser } from "@/lib/transcripts";
 
 type ObservationTranscriptRouteProps = {
   params: Promise<{
@@ -16,7 +14,7 @@ type ObservationTranscriptRouteProps = {
 
 export async function GET(
   _request: Request,
-  { params }: ObservationTranscriptRouteProps
+  { params }: ObservationTranscriptRouteProps,
 ) {
   const user = await getCurrentUser();
 
@@ -28,7 +26,10 @@ export async function GET(
   const observation = await getObservationTranscriptForUser(id, user);
 
   if (!observation) {
-    return NextResponse.json({ error: "Observation not found." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Observation not found." },
+      { status: 404 },
+    );
   }
 
   return NextResponse.json({
@@ -42,5 +43,8 @@ export async function GET(
 
 // Production never fabricates a transcript when a provider fails.
 export async function POST() {
-  return NextResponse.json({ error: "Use the evaluation workflow." }, { status: 410 });
+  return NextResponse.json(
+    { error: "Use the evaluation workflow." },
+    { status: 410 },
+  );
 }

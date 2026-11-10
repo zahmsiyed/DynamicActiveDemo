@@ -35,3 +35,6 @@ export default function RootLayout({
     </html>
   );
 }
+
+// Authentication must be evaluated at request time even in credential-free builds.
+export const dynamic = "force-dynamic";

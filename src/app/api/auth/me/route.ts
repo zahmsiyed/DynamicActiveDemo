@@ -13,7 +13,7 @@ export async function GET() {
       {
         user: null,
       },
-      { status: 401 }
+      { status: 401 },
     );
   }
 

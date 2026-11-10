@@ -15,13 +15,13 @@ const illustrationKeySchema = z.enum([
 export const classroomInsightSchema = z.object({
   summary: z.string(),
   metrics: z.object({
-    teacherTalkRatio: z.number(),
-    studentTalkRatio: z.number(),
-    questionCount: z.number(),
-    fillerWordCount: z.number(),
-    positiveReinforcementCount: z.number(),
-    pacingScore: z.number(),
-    clarityScore: z.number(),
+    teacherTalkRatio: z.number().min(0).max(100),
+    studentTalkRatio: z.number().min(0).max(100),
+    questionCount: z.number().int().min(0),
+    fillerWordCount: z.number().int().min(0),
+    positiveReinforcementCount: z.number().int().min(0),
+    pacingScore: z.number().min(0).max(100),
+    clarityScore: z.number().min(0).max(100),
     pacingNotes: z.string(),
   }),
   recommendations: z.array(
@@ -29,30 +29,29 @@ export const classroomInsightSchema = z.object({
       title: z.string(),
       body: z.string(),
       priority: z.enum(["high", "medium", "low"]),
-    })
+    }),
   ),
   sentiment: z.object({
     overall: z.enum(["supportive", "neutral", "corrective", "mixed"]),
-    positiveMoments: z.number(),
-    correctionMoments: z.number(),
-    confidence: z.number(),
+    positiveMoments: z.number().int().min(0),
+    correctionMoments: z.number().int().min(0),
+    confidence: z.number().min(0).max(1),
   }),
   heatmap: z.array(
     z.object({
       label: z.string(),
       teacher: z.number(),
       students: z.number(),
-    })
+    }),
   ),
   highlights: z.array(
     z.object({
       quote: z.string(),
       reason: z.string(),
       startMs: z.number(),
-    })
+    }),
   ),
   illustrationKey: illustrationKeySchema,
 });
 
 export type ClassroomInsight = z.infer<typeof classroomInsightSchema>;
-

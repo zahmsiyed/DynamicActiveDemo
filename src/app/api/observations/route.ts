@@ -1,36 +1,17 @@
-import { observationScope } from "@/lib/access";
-// School admins submit the observation form here. The route validates the
-// payload, checks teacher scope, creates rubric scores, and saves feedback.
-
-import {
-  ObservationStatus,
-  Role,
-} from "@prisma/client";
+// Creation schedules an unscored evaluation. Approved scores are written only
+// by the review endpoint, never by creation or a background worker.
+import { z } from "zod";
 import { NextResponse } from "next/server";
-
 import { getCurrentUser } from "@/lib/auth";
+import { observationScope } from "@/lib/access";
 import { getDb } from "@/lib/db";
-import {
-  parseDateInput,
-  parseObservationStatus,
-  parseScoreInputs,
-  readObservationBody,
-  readText,
-} from "@/lib/observation-input";
-
-export async function GET(request: Request) {
+import { api, HttpError, jsonBody, limit } from "@/lib/http";
+export const GET = api(async (request: Request) => {
   const user = await getCurrentUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  }
-
-  // Each role receives only observations inside its allowed scope.
-  const where = observationScope(user);
-
+  if (!user) throw new HttpError(401, "Unauthorized.");
   const cursor = new URL(request.url).searchParams.get("cursor");
   const observations = await getDb().observation.findMany({
-    where,
+    where: observationScope(user),
     take: 50,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     select: {
@@ -41,142 +22,72 @@ export async function GET(request: Request) {
       status: true,
       scheduledAt: true,
       observedAt: true,
-      teacher: {
-        select: {
-          name: true,
-          email: true,
-        },
-      },
-      observer: {
-        select: {
-          name: true,
-          email: true,
-        },
-      },
-      school: {
-        select: {
-          name: true,
-        },
-      },
+      teacher: { select: { name: true, email: true } },
+      observer: { select: { name: true, email: true } },
+      school: { select: { name: true } },
     },
     orderBy: { id: "desc" },
   });
-
-  return NextResponse.json({ observations, nextCursor: observations.length === 50 ? observations[49].id : null });
-}
-
-export async function POST(request: Request) {
+  return NextResponse.json({
+    observations,
+    nextCursor: observations.length === 50 ? observations[49].id : null,
+  });
+});
+export const POST = api(async (request: Request) => {
   const user = await getCurrentUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  }
-
-  // Observation creation is intentionally scoped to school admins.
-  if (user.role !== Role.SCHOOL_ADMIN || !user.schoolId || !user.districtId) {
-    return NextResponse.json(
-      { error: "Only school admins can create observations." },
-      { status: 403 }
-    );
-  }
-
-  const body = await readObservationBody(request);
-  const title = readText(body.title);
-  const subject = readText(body.subject);
-  const gradeLevel = readText(body.gradeLevel);
-  const summary = readText(body.summary);
-  const feedback = readText(body.feedback);
-  const teacherId = readText(body.teacherId);
-  const status = parseObservationStatus(body.status, ObservationStatus.SCHEDULED);
-  const scheduledAt = parseDateInput(body.scheduledAt);
-  const { error: scoreError, scores } = parseScoreInputs(body.scores);
-
-  if (!title || !subject || !gradeLevel || !teacherId) {
-    return NextResponse.json(
-      { error: "Title, subject, grade, and teacher are required." },
-      { status: 400 }
-    );
-  }
-
-  if (!scheduledAt) {
-    return NextResponse.json(
-      { error: "Choose a valid observation date." },
-      { status: 400 }
-    );
-  }
-
-  if (scoreError) {
-    return NextResponse.json({ error: scoreError }, { status: 400 });
-  }
-
-  if (status === ObservationStatus.FINALIZED) return NextResponse.json({ error: "Create a scheduled observation; finalize after review." }, { status: 400 });
-
-  const db = getDb();
-  const teacher = await db.user.findUnique({
+  if (!user) throw new HttpError(401, "Unauthorized.");
+  if (user.role !== "SCHOOL_ADMIN" || !user.schoolId || !user.districtId)
+    throw new HttpError(403, "School admin required.");
+  await limit(`create:${user.id}`, 30);
+  const body = await jsonBody(
+    request,
+    z
+      .object({
+        title: z.string().trim().min(1).max(200),
+        subject: z.string().trim().min(1).max(120),
+        gradeLevel: z.string().trim().min(1).max(30),
+        teacherId: z.string(),
+        summary: z.string().max(10000).optional(),
+        scheduledAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        status: z.literal("SCHEDULED").optional(),
+      })
+      .strict(),
+  );
+  const date = new Date(`${body.scheduledAt}T16:00:00.000Z`);
+  if (
+    !Number.isFinite(date.getTime()) ||
+    date.toISOString().slice(0, 10) !== body.scheduledAt
+  )
+    throw new HttpError(400, "Choose a valid observation date.");
+  const teacher = await getDb().user.findFirst({
     where: {
-      id: teacherId,
-    },
-    select: {
-      id: true,
-      role: true,
-      schoolId: true,
-      districtId: true,
+      id: body.teacherId,
+      role: "TEACHER",
+      active: true,
+      districtId: user.districtId,
+      schoolId: user.schoolId,
     },
   });
-
-  if (
-    !teacher ||
-    teacher.role !== Role.TEACHER ||
-    teacher.schoolId !== user.schoolId ||
-    teacher.districtId !== user.districtId
-  ) {
-    return NextResponse.json(
-      { error: "Choose a teacher from your school." },
-      { status: 403 }
-    );
-  }
-
-  const observation = await db.observation.create({
+  if (!teacher) throw new HttpError(403, "Choose a teacher from your school.");
+  const observation = await getDb().observation.create({
     data: {
-      title,
-      subject,
-      gradeLevel,
-      status,
-      scheduledAt,
-      observedAt: null,
-      summary: summary || null,
+      title: body.title,
+      subject: body.subject,
+      gradeLevel: body.gradeLevel,
+      summary: body.summary,
+      scheduledAt: date,
+      status: "SCHEDULED",
       teacherId: teacher.id,
       observerId: user.id,
-      schoolId: user.schoolId,
       districtId: user.districtId,
-      scores: {
-        create: scores.map((score) => ({
-          category: score.category,
-          score: score.score,
-          note: score.note || null,
-        })),
-      },
-      feedback: feedback
-        ? {
-            create: {
-              authorId: user.id,
-              teacherId: teacher.id,
-              body: feedback,
-            },
-          }
-        : undefined,
-    },
-    select: {
-      id: true,
-      status: true,
+      schoolId: user.schoolId,
     },
   });
-
   return NextResponse.json(
     {
-      observation,
+      observation: { id: observation.id, status: observation.status },
       redirectPath: `/observations/${observation.id}`,
     },
-    { status: 201 }
+    { status: 201 },
   );
-}
+});

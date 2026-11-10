@@ -5,14 +5,23 @@ import { cookies } from "next/headers";
 
 export async function authClient() {
   const store = await cookies();
-  return createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
-    cookies: {
-      getAll: () => store.getAll(),
-      setAll: (items) => {
-        // Server Components cannot write cookies; the proxy refreshes them.
-        try { items.forEach(({ name, value, options }) => store.set(name, value, options)); } catch { /* Read-only render. */ }
+  return createServerClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll: () => store.getAll(),
+        setAll: (items) => {
+          // Server Components cannot write cookies; the proxy refreshes them.
+          try {
+            items.forEach(({ name, value, options }) =>
+              store.set(name, value, options),
+            );
+          } catch {
+            /* Read-only render. */
+          }
+        },
       },
     },
-  });
+  );
 }
-

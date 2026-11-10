@@ -3,22 +3,15 @@
 // teachers see only reports attached to their own user account.
 
 import Link from "next/link";
+import { formatUploadSize } from "@/lib/media";
 import { notFound } from "next/navigation";
 
-import { AnalyzeInsightButton } from "@/components/analyze-insight-button";
-import { AudioUploadForm } from "@/components/audio-upload-form";
+import { EvaluationWorkflow } from "@/components/evaluation-workflow";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { StatusBadge } from "@/components/dashboard-widgets";
 import { InsightPanel } from "@/components/insight-panel";
-import { RealtimeRecorder } from "@/components/realtime-recorder";
-import { TranscribeButton } from "@/components/transcribe-button";
 import { TranscriptViewer } from "@/components/transcript-viewer";
 import { requireCurrentUser } from "@/lib/auth";
-import {
-  audioUploadAcceptAttribute,
-  formatUploadSize,
-  maxAudioUploadBytes,
-} from "@/lib/audio-uploads";
 import {
   averageScore,
   evaluationCategories,
@@ -70,13 +63,12 @@ export default async function ObservationReportPage({
   const observedDate = observation.observedAt ?? observation.scheduledAt;
   const reportAverage = averageScore(observation.scores);
   const scoresByCategory = new Map(
-    observation.scores.map((score) => [score.category, score])
+    observation.scores.map((score) => [score.category, score]),
   );
   const orderedScores = evaluationCategories
     .map((category) => scoresByCategory.get(category))
     .filter((score): score is NonNullable<typeof score> => Boolean(score));
   const insightView = readInsightView(observation.insight);
-  const maxUploadSizeLabel = formatUploadSize(maxAudioUploadBytes);
 
   return (
     <DashboardShell
@@ -86,10 +78,7 @@ export default async function ObservationReportPage({
       description="Review the observation record, rubric evidence, written coaching feedback, and workflow status for the classroom report."
     >
       <div className="flex flex-wrap gap-2">
-        <Link
-          className={secondaryLinkClass}
-          href={dashboardPath}
-        >
+        <Link className={secondaryLinkClass} href={dashboardPath}>
           Back to dashboard
         </Link>
 
@@ -102,10 +91,7 @@ export default async function ObservationReportPage({
         </Link>
 
         {user.role === "SCHOOL_ADMIN" ? (
-          <Link
-            className={primaryLinkClass}
-            href="/observations/new"
-          >
+          <Link className={primaryLinkClass} href="/observations/new">
             Create another observation
           </Link>
         ) : null}
@@ -250,7 +236,7 @@ export default async function ObservationReportPage({
               <p className="mt-1 text-brand-muted">
                 {observation.audioUpload
                   ? `${observation.audioUpload.fileName} (${formatUploadSize(
-                      observation.audioUpload.sizeBytes
+                      observation.audioUpload.sizeBytes,
                     )})`
                   : "No recording uploaded yet."}
               </p>
@@ -277,124 +263,17 @@ export default async function ObservationReportPage({
         </section>
       </div>
 
-      {user.role === "SCHOOL_ADMIN" ? (
-        <RealtimeRecorder
-          maxSizeLabel={maxUploadSizeLabel}
+      {user.role === "SCHOOL_ADMIN" && (
+        <EvaluationWorkflow
           observationId={observation.id}
+          finalized={observation.status === "FINALIZED"}
         />
-      ) : null}
-
-      <section className={panelClass}>
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <h2 className="font-semibold text-brand-ink">Recording upload</h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-brand-muted">
-              Attach an existing classroom recording to this observation. The
-              server sends the stored file to OpenAI for diarized speech-to-text
-              when an API key is available, then falls back to demo transcript
-              data when the live path cannot run.
-            </p>
-          </div>
-
-          {observation.audioUpload ? (
-            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-              Recording attached
-            </span>
-          ) : (
-            <span className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-xs font-semibold text-stone-600">
-              No recording
-            </span>
-          )}
-        </div>
-
-        {observation.audioUpload ? (
-          <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className={compactCardClass}>
-              <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-muted">
-                File
-              </dt>
-              <dd className="mt-2 break-words text-sm font-semibold text-brand-ink">
-                {observation.audioUpload.fileName}
-              </dd>
-            </div>
-
-            <div className={compactCardClass}>
-              <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-muted">
-                Type
-              </dt>
-              <dd className="mt-2 font-mono text-sm text-brand-ink">
-                {observation.audioUpload.mimeType}
-              </dd>
-            </div>
-
-            <div className={compactCardClass}>
-              <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-muted">
-                Size
-              </dt>
-              <dd className="mt-2 font-mono text-sm text-brand-ink">
-                {formatUploadSize(observation.audioUpload.sizeBytes)}
-              </dd>
-            </div>
-
-            <div className={compactCardClass}>
-              <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-muted">
-                Storage object
-              </dt>
-              <dd className="mt-2 break-words font-mono text-xs text-brand-muted">
-                {observation.audioUpload.storagePath ?? "metadata only"}
-              </dd>
-            </div>
-          </dl>
-        ) : null}
-
-        {user.role === "SCHOOL_ADMIN" && observation.audioUpload ? (
-          <TranscribeButton
-            hasTranscript={Boolean(observation.transcription)}
-            observationId={observation.id}
-          />
-        ) : null}
-
-        {user.role === "SCHOOL_ADMIN" ? (
-          <AudioUploadForm
-            accept={audioUploadAcceptAttribute}
-            maxSizeLabel={maxUploadSizeLabel}
-            observationId={observation.id}
-          />
-        ) : null}
-      </section>
+      )}
 
       <TranscriptViewer
-        canCreateFallback={
-          user.role === "SCHOOL_ADMIN" && !observation.audioUpload
-        }
         highlightedStartMs={insightView?.highlightStartMs ?? []}
-        observationId={observation.id}
         transcription={observation.transcription}
       />
-
-      <section className={panelClass}>
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <h2 className="font-semibold text-brand-ink">AI analysis</h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-brand-muted">
-              Turn the stored transcript into structured coaching data:
-              summary, metrics, sentiment, recommendations, heatmap, and
-              transcript highlights.
-            </p>
-          </div>
-
-          <span className="w-fit rounded-full border border-brand-line bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-coral-dark">
-            {observation.transcription ? "Transcript ready" : "Needs transcript"}
-          </span>
-        </div>
-
-        {user.role === "SCHOOL_ADMIN" && observation.transcription ? (
-          <AnalyzeInsightButton
-            hasInsight={Boolean(observation.insight)}
-            observationId={observation.id}
-          />
-        ) : null}
-      </section>
 
       <InsightPanel insight={insightView} />
     </DashboardShell>

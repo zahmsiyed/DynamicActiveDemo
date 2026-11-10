@@ -11,7 +11,10 @@ type ObservationApiRouteProps = {
   }>;
 };
 
-export async function GET(_request: Request, { params }: ObservationApiRouteProps) {
+export async function GET(
+  _request: Request,
+  { params }: ObservationApiRouteProps,
+) {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -22,7 +25,10 @@ export async function GET(_request: Request, { params }: ObservationApiRouteProp
   const observation = await getObservationReportForUser(id, user);
 
   if (!observation) {
-    return NextResponse.json({ error: "Observation not found." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Observation not found." },
+      { status: 404 },
+    );
   }
 
   return NextResponse.json({ observation });
@@ -30,5 +36,8 @@ export async function GET(_request: Request, { params }: ObservationApiRouteProp
 
 // Scores and publication now change only through explicit review/reopen actions.
 export async function PATCH() {
-  return NextResponse.json({ error: "Use the review workflow." }, { status: 410 });
+  return NextResponse.json(
+    { error: "Use the review workflow." },
+    { status: 410 },
+  );
 }

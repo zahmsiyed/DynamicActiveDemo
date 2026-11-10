@@ -5,11 +5,6 @@ import Link from "next/link";
 
 import { DashboardShell } from "@/components/dashboard-shell";
 import { requireCurrentUser } from "@/lib/auth";
-import {
-  evaluationCategories,
-  evaluationCategoryDescriptions,
-  evaluationCategoryLabels,
-} from "@/lib/evaluation";
 import { getTeachersForSchoolAdmin } from "@/lib/observations";
 
 import { ObservationForm } from "./observation-form";
@@ -18,19 +13,12 @@ export default async function NewObservationPage() {
   const user = await requireCurrentUser(["SCHOOL_ADMIN"]);
   const teachers = await getTeachersForSchoolAdmin(user);
 
-  // The form receives label-ready rubric data instead of raw enum names.
-  const rubric = evaluationCategories.map((category) => ({
-    category,
-    label: evaluationCategoryLabels[category],
-    description: evaluationCategoryDescriptions[category],
-  }));
-
   return (
     <DashboardShell
       user={user}
       eyebrow="Create observation"
       title="New teacher observation"
-      description="Create the core observation record, score the rubric categories, and write the first round of teacher feedback."
+      description="Schedule a classroom observation, then upload a recording for evaluation and review."
     >
       <div className="flex">
         <Link
@@ -41,7 +29,7 @@ export default async function NewObservationPage() {
         </Link>
       </div>
 
-      <ObservationForm teachers={teachers} rubric={rubric} />
+      <ObservationForm teachers={teachers} />
     </DashboardShell>
   );
 }

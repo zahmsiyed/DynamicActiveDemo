@@ -6,18 +6,6 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState, useTransition } from "react";
 
-const productSignals = [
-  { label: "Reports ready", value: "x" },
-  { label: "AI insights", value: "x" },
-  { label: "Avg score", value: "x" },
-];
-
-const observationSignalRows = [
-  { colorClass: "bg-brand-coral", label: "Teacher talk", width: 62 },
-  { colorClass: "bg-brand-gold", label: "Student talk", width: 38 },
-  { colorClass: "bg-emerald-400", label: "Clarity", width: 84 },
-];
-
 function safeRedirectPath(requestedPath: string | null, fallbackPath: string) {
   if (!requestedPath) return fallbackPath;
   if (!requestedPath.startsWith("/") || requestedPath.startsWith("//")) {
@@ -99,7 +87,7 @@ export function LoginForm() {
 
       // Refresh makes server components read the new cookie immediately.
       router.push(
-        safeRedirectPath(requestedPath, result.redirectPath || "/dashboard")
+        safeRedirectPath(requestedPath, result.redirectPath || "/dashboard"),
       );
       router.refresh();
     });
@@ -121,55 +109,10 @@ export function LoginForm() {
           classroom evaluation workflow through each role&apos;s lens.
         </p>
 
-        <div className="mt-8 grid max-w-2xl gap-3 sm:grid-cols-3">
-          {productSignals.map((signal) => (
-            <div
-              key={signal.label}
-              className="rounded-[1.25rem] border border-brand-line bg-white p-4 shadow-sm"
-            >
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-muted">
-                {signal.label}
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-brand-ink">
-                {signal.value}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-8 max-w-2xl rounded-[2rem] border border-brand-line bg-white p-5 shadow-sm">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-brand-ink">
-                Observation signal
-              </p>
-              <p className="mt-1 text-sm text-brand-muted">
-                Reports include scores, feedback, transcripts, and AI
-                recommendations.
-              </p>
-            </div>
-            <span className="rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-coral-dark">
-              Human-reviewed reports
-            </span>
-          </div>
-
-          <div className="mt-5 space-y-3">
-            {observationSignalRows.map((row) => (
-              <div key={row.label}>
-                <div className="mb-1 flex justify-between text-xs text-brand-muted">
-                  <span>{row.label}</span>
-                  <span>x%</span>
-                </div>
-                <div className="h-2 rounded-full bg-brand-soft">
-                  <div
-                    className={`h-2 rounded-full ${row.colorClass}`}
-                    style={{ width: `${row.width}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <p className="mt-8 text-sm text-brand-muted">
+          Private recordings, evidence-linked suggestions, and human-reviewed
+          reports.
+        </p>
       </section>
 
       <section className="rounded-[2rem] border border-brand-line bg-brand-card p-6 shadow-sm sm:p-8">
@@ -225,7 +168,9 @@ export function LoginForm() {
           </button>
         </form>
 
-        <a className="mt-6 block underline" href="/recover">Forgot password?</a>
+        <a className="mt-6 block underline" href="/recover">
+          Forgot password?
+        </a>
       </section>
     </div>
   );

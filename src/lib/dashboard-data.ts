@@ -104,7 +104,9 @@ function formatDate(date: Date | null) {
 }
 
 // Compute an observation's rubric average from its evaluation score records.
-function averageObservationScore(observation: Pick<DashboardObservationRecord, "scores">) {
+function averageObservationScore(
+  observation: Pick<DashboardObservationRecord, "scores">,
+) {
   if (!observation.scores.length) return 0;
 
   const total = observation.scores.reduce((sum, score) => sum + score.score, 0);
@@ -113,7 +115,7 @@ function averageObservationScore(observation: Pick<DashboardObservationRecord, "
 
 // Convert a Prisma observation into the stable table row shape.
 function toDashboardObservation(
-  observation: DashboardObservationRecord
+  observation: DashboardObservationRecord,
 ): DashboardObservation {
   return {
     id: observation.id,
@@ -139,23 +141,25 @@ function completionRate(observations: DashboardObservationRecord[]) {
   if (!observations.length) return 0;
 
   const finalized = observations.filter(
-    (observation) => observation.status === ObservationStatus.FINALIZED
+    (observation) => observation.status === ObservationStatus.FINALIZED,
   ).length;
 
   return Math.round((finalized / observations.length) * 100);
 }
 
 // Average score across all observations that have scores.
-function averageScoreAcrossObservations(observations: DashboardObservationRecord[]) {
+function averageScoreAcrossObservations(
+  observations: DashboardObservationRecord[],
+) {
   const scoredObservations = observations.filter(
-    (observation) => observation.scores.length > 0
+    (observation) => observation.scores.length > 0,
   );
 
   if (!scoredObservations.length) return 0;
 
   const total = scoredObservations.reduce(
     (sum, observation) => sum + averageObservationScore(observation),
-    0
+    0,
   );
 
   return Number((total / scoredObservations.length).toFixed(1));
@@ -166,14 +170,22 @@ function statusCounts(observations: DashboardObservationRecord[]) {
   return Object.values(ObservationStatus).map((status) => ({
     status,
     label: statusLabels[status],
-    count: observations.filter((observation) => observation.status === status).length,
+    count: observations.filter((observation) => observation.status === status)
+      .length,
   }));
 }
 
 // JSON columns come back as unknown Prisma JSON. This helper safely extracts a
 // numeric metric value without trusting the shape blindly.
-function readMetric(metricsJson: Prisma.JsonValue | null | undefined, key: string) {
-  if (!metricsJson || typeof metricsJson !== "object" || Array.isArray(metricsJson)) {
+function readMetric(
+  metricsJson: Prisma.JsonValue | null | undefined,
+  key: string,
+) {
+  if (
+    !metricsJson ||
+    typeof metricsJson !== "object" ||
+    Array.isArray(metricsJson)
+  ) {
     return null;
   }
 
@@ -182,7 +194,9 @@ function readMetric(metricsJson: Prisma.JsonValue | null | undefined, key: strin
 }
 
 // Extract recommendation rows from the seeded AI insight JSON.
-function readRecommendations(recommendations: Prisma.JsonValue | null | undefined) {
+function readRecommendations(
+  recommendations: Prisma.JsonValue | null | undefined,
+) {
   if (!Array.isArray(recommendations)) return [];
 
   return recommendations
@@ -206,7 +220,7 @@ function readRecommendations(recommendations: Prisma.JsonValue | null | undefine
       return { title, body, priority };
     })
     .filter((item): item is { title: string; body: string; priority: string } =>
-      Boolean(item)
+      Boolean(item),
     );
 }
 
@@ -216,44 +230,57 @@ export async function getDistrictDashboardData(user: DashboardUser) {
   const db = getDb();
   const districtId = user.districtId ?? "";
 
-  const [schools, teacherCount, schoolAdminCount, observations] = await Promise.all([
-    db.school.findMany({
-      where: { districtId },
-      include: {
-        users: {
-          select: {
-            role: true,
+  const [schools, teacherCount, schoolAdminCount, observations] =
+    await Promise.all([
+      db.school.findMany({
+        where: { districtId },
+        include: {
+          users: {
+            select: {
+              role: true,
+            },
+          },
+          _count: {
+            select: {
+              observations: true,
+            },
           },
         },
-        _count: {
-          select: {
-            observations: true,
-          },
+        orderBy: {
+          name: "asc",
         },
-      },
-      orderBy: {
-        name: "asc",
-      },
-    }),
-    db.user.count({
-      where: { districtId, role: Role.TEACHER },
-    }),
-    db.user.count({
-      where: { districtId, role: Role.SCHOOL_ADMIN },
-    }),
-    db.observation.findMany({
-      where: { districtId },
-      take: 100,
-    include: dashboardObservationInclude,
-      orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
-    }),
-  ]);
+      }),
+      db.user.count({
+        where: { districtId, role: Role.TEACHER },
+      }),
+      db.user.count({
+        where: { districtId, role: Role.SCHOOL_ADMIN },
+      }),
+      db.observation.findMany({
+        where: { districtId, deletingAt: null },
+        take: 100,
+        include: dashboardObservationInclude,
+        orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+      }),
+    ]);
 
   return {
     metrics: [
-      { label: "Schools", value: schools.length.toString(), detail: "District scope" },
-      { label: "Teachers", value: teacherCount.toString(), detail: "Across schools" },
-      { label: "School admins", value: schoolAdminCount.toString(), detail: "Managed users" },
+      {
+        label: "Schools",
+        value: schools.length.toString(),
+        detail: "District scope",
+      },
+      {
+        label: "Teachers",
+        value: teacherCount.toString(),
+        detail: "Across schools",
+      },
+      {
+        label: "School admins",
+        value: schoolAdminCount.toString(),
+        detail: "Managed users",
+      },
       {
         label: "Completion rate",
         value: `${completionRate(observations)}%`,
@@ -266,17 +293,21 @@ export async function getDistrictDashboardData(user: DashboardUser) {
       },
       {
         label: "AI insights",
-        value: observations.filter((observation) => observation.insight).length.toString(),
+        value: observations
+          .filter((observation) => observation.insight)
+          .length.toString(),
         detail: "Generated reports",
       },
     ],
     schools: schools.map((school) => ({
       id: school.id,
       name: school.name,
-      teachers: school.users.filter((schoolUser) => schoolUser.role === Role.TEACHER)
-        .length,
-      admins: school.users.filter((schoolUser) => schoolUser.role === Role.SCHOOL_ADMIN)
-        .length,
+      teachers: school.users.filter(
+        (schoolUser) => schoolUser.role === Role.TEACHER,
+      ).length,
+      admins: school.users.filter(
+        (schoolUser) => schoolUser.role === Role.SCHOOL_ADMIN,
+      ).length,
       observations: school._count.observations,
     })),
     statusCounts: statusCounts(observations),
@@ -296,7 +327,7 @@ export async function getSchoolDashboardData(user: DashboardUser) {
       include: {
         observedLessons: {
           take: 100,
-    include: dashboardObservationInclude,
+          include: dashboardObservationInclude,
         },
       },
       orderBy: {
@@ -304,24 +335,32 @@ export async function getSchoolDashboardData(user: DashboardUser) {
       },
     }),
     db.observation.findMany({
-      where: { schoolId, districtId: user.districtId ?? "" },
+      where: { schoolId, districtId: user.districtId ?? "", deletingAt: null },
       take: 100,
-    include: dashboardObservationInclude,
+      include: dashboardObservationInclude,
       orderBy: [{ scheduledAt: "asc" }, { updatedAt: "desc" }],
     }),
   ]);
 
   const upcoming = observations.filter(
-    (observation) => observation.status === ObservationStatus.SCHEDULED
+    (observation) => observation.status === ObservationStatus.SCHEDULED,
   );
   const reportsNeedingWork = observations.filter(
-    (observation) => observation.status !== ObservationStatus.FINALIZED
+    (observation) => observation.status !== ObservationStatus.FINALIZED,
   );
 
   return {
     metrics: [
-      { label: "Teachers", value: teachers.length.toString(), detail: "In this school" },
-      { label: "Upcoming", value: upcoming.length.toString(), detail: "Scheduled evals" },
+      {
+        label: "Teachers",
+        value: teachers.length.toString(),
+        detail: "In this school",
+      },
+      {
+        label: "Upcoming",
+        value: upcoming.length.toString(),
+        detail: "Scheduled evals",
+      },
       {
         label: "Feedback queue",
         value: reportsNeedingWork.length.toString(),
@@ -329,12 +368,16 @@ export async function getSchoolDashboardData(user: DashboardUser) {
       },
       {
         label: "Recordings",
-        value: observations.filter((observation) => observation.audioUpload).length.toString(),
+        value: observations
+          .filter((observation) => observation.audioUpload)
+          .length.toString(),
         detail: "Uploaded audio",
       },
       {
         label: "Transcripts",
-        value: observations.filter((observation) => observation.transcription).length.toString(),
+        value: observations
+          .filter((observation) => observation.transcription)
+          .length.toString(),
         detail: "Ready to review",
       },
       {
@@ -349,8 +392,9 @@ export async function getSchoolDashboardData(user: DashboardUser) {
       title: teacher.title ?? "Teacher",
       observations: teacher.observedLessons.length,
       averageScore: averageScoreAcrossObservations(teacher.observedLessons),
-      latestStatus:
-        teacher.observedLessons[0]?.status ? statusLabels[teacher.observedLessons[0].status] : "No observations",
+      latestStatus: teacher.observedLessons[0]?.status
+        ? statusLabels[teacher.observedLessons[0].status]
+        : "No observations",
     })),
     upcoming: upcoming.map(toDashboardObservation),
     statusCounts: statusCounts(observations),
@@ -364,14 +408,23 @@ export async function getTeacherDashboardData(user: DashboardUser) {
   const db = getDb();
 
   const observations = await db.observation.findMany({
-    where: { teacherId: user.id, districtId: user.districtId ?? "", status: "FINALIZED" },
+    where: {
+      teacherId: user.id,
+      districtId: user.districtId ?? "",
+      status: "FINALIZED",
+      deletingAt: null,
+    },
     take: 100,
     include: dashboardObservationInclude,
-    orderBy: [{ observedAt: "desc" }, { scheduledAt: "desc" }, { updatedAt: "desc" }],
+    orderBy: [
+      { observedAt: "desc" },
+      { scheduledAt: "desc" },
+      { updatedAt: "desc" },
+    ],
   });
 
   const finalized = observations.filter(
-    (observation) => observation.status === ObservationStatus.FINALIZED
+    (observation) => observation.status === ObservationStatus.FINALIZED,
   );
   const latestObservation = observations[0] ?? null;
   const latestInsightObservation =
@@ -382,7 +435,11 @@ export async function getTeacherDashboardData(user: DashboardUser) {
 
   return {
     metrics: [
-      { label: "Reports", value: observations.length.toString(), detail: "All observations" },
+      {
+        label: "Reports",
+        value: observations.length.toString(),
+        detail: "All observations",
+      },
       {
         label: "Finalized",
         value: finalized.length.toString(),
@@ -417,7 +474,7 @@ export async function getTeacherDashboardData(user: DashboardUser) {
       latestInsightObservation?.insight?.summary ??
       "No AI summary is available yet. It will appear here after a transcript is analyzed.",
     recommendations: readRecommendations(
-      latestInsightObservation?.insight?.recommendations
+      latestInsightObservation?.insight?.recommendations,
     ),
     feedback: observations.flatMap((observation) =>
       observation.feedback.map((feedback) => ({
@@ -425,7 +482,7 @@ export async function getTeacherDashboardData(user: DashboardUser) {
         observationTitle: observation.title,
         body: feedback.body,
         createdDate: formatDate(feedback.createdAt),
-      }))
+      })),
     ),
     observations: observations.map(toDashboardObservation),
   };

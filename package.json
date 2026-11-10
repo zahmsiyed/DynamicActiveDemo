@@ -15,14 +15,23 @@
     "db:generate": "node scripts/with-env.mjs prisma generate",
     "db:migrate": "node scripts/with-env.mjs prisma migrate dev",
     "db:deploy": "node scripts/with-env.mjs prisma migrate deploy",
-    "db:push": "node scripts/with-env.mjs prisma db push"
+    "db:push": "node scripts/with-env.mjs prisma db push",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "node --import tsx --test tests/unit/*.test.ts",
+    "test:integration": "node --import tsx --test tests/integration/*.test.ts",
+    "test:e2e": "playwright test",
+    "worker": "node scripts/with-env.mjs tsx scripts/worker.ts",
+    "maintenance": "node scripts/with-env.mjs tsx scripts/maintenance.ts",
+    "district:create": "node scripts/with-env.mjs tsx scripts/provision-district.ts",
+    "queue:status": "node scripts/with-env.mjs tsx scripts/queue-status.ts",
+    "benchmark": "node scripts/with-env.mjs tsx scripts/benchmark.ts",
+    "format:check": "prettier --check src/lib/jobs src/lib/lifecycle src/lib/access.ts src/lib/http.ts src/components/evaluation-workflow.tsx tests playwright.config.ts proxy.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.119.0",
     "bcryptjs": "^3.0.3",
-    "jose": "^6.2.3",
     "next": "16.4.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -38,10 +47,15 @@
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
+    "prettier": "3.9.10",
     "prisma": "^6.19.0",
     "supabase": "2.122.1",
     "tailwindcss": "^4",
     "tsx": "^4.22.3",
     "typescript": "^5"
-  }
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "type": "module"
 }
