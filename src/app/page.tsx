@@ -10,15 +10,18 @@ import { roleDashboardPath } from "@/lib/session";
 const roleSummaries = [
   {
     title: "District Admin",
-    description: "District-wide visibility across schools, teachers, reports, and trends.",
+    description:
+      "District-wide visibility across schools, teachers, reports, and trends.",
   },
   {
     title: "School Admin",
-    description: "Observation creation, classroom recording uploads, scoring, and feedback.",
+    description:
+      "Observation creation, classroom recording uploads, scoring, and feedback.",
   },
   {
     title: "Teacher",
-    description: "A clear place to review feedback, transcripts, insights, and growth.",
+    description:
+      "A clear place to review feedback, transcripts, insights, and growth.",
   },
 ];
 
@@ -30,9 +33,9 @@ const workflowSteps = [
 ];
 
 const overviewStats = [
-  { label: "Seeded roles", value: "x" },
-  { label: "Reports", value: "x" },
-  { label: "AI insights", value: "x" },
+  { label: "Access", value: "By role" },
+  { label: "Reports", value: "Reviewed" },
+  { label: "Evidence", value: "Linked" },
 ];
 
 export default async function Home() {
@@ -49,7 +52,7 @@ export default async function Home() {
         <header className="flex flex-col gap-4 rounded-[2rem] border border-brand-line bg-brand-card p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-coral">
-              Dynamic Active prototype
+              DynamicActive
             </p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight text-brand-ink">
               Teacher Evaluation Studio
@@ -75,9 +78,9 @@ export default async function Home() {
               Evaluation workflows for every classroom role.
             </h2>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-brand-muted">
-              A local prototype for district leaders, school administrators,
-              and teachers to review observations, evidence, feedback, and AI
-              coaching insights from the same seeded data model.
+              A shared workspace for district leaders, school administrators,
+              and teachers to review classroom evidence, feedback, and coaching
+              recommendations.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -85,7 +88,7 @@ export default async function Home() {
                 className="rounded-full bg-brand-coral px-5 py-3 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-brand-coral-dark"
                 href="/login"
               >
-                Choose a demo role
+                Sign in to your district
               </Link>
             </div>
 
@@ -117,7 +120,7 @@ export default async function Home() {
                 </p>
               </div>
               <span className="rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-coral-dark">
-                Local prototype
+                Human-reviewed reports
               </span>
             </div>
 
@@ -147,11 +150,10 @@ export default async function Home() {
 
             <div className="mt-5 rounded-[1.25rem] border border-brand-line bg-white p-4">
               <div className="mb-2 flex items-center justify-between text-xs text-brand-muted">
-                <span>Student participation</span>
-                <span>60%</span>
-              </div>
-              <div className="h-2 rounded-full bg-brand-soft">
-                <div className="h-2 w-3/5 rounded-full bg-brand-coral" />
+                <span>
+                  Every published evaluation is reviewed by a school
+                  administrator.
+                </span>
               </div>
             </div>
           </div>
@@ -185,7 +187,9 @@ export default async function Home() {
                 <p className="text-sm font-semibold text-brand-coral">
                   Step {index + 1}
                 </p>
-                <p className="mt-2 text-sm leading-6 text-brand-muted">{step}</p>
+                <p className="mt-2 text-sm leading-6 text-brand-muted">
+                  {step}
+                </p>
               </div>
             ))}
           </div>

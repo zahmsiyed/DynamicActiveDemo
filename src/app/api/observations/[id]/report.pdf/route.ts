@@ -28,7 +28,7 @@ function pdfFileName(title: string) {
 
 export async function GET(
   _request: Request,
-  { params }: ObservationPdfRouteProps
+  { params }: ObservationPdfRouteProps,
 ) {
   const user = await getCurrentUser();
 
@@ -40,7 +40,10 @@ export async function GET(
   const observation = await getObservationReportForUser(id, user);
 
   if (!observation) {
-    return NextResponse.json({ error: "Observation not found." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Observation not found." },
+      { status: 404 },
+    );
   }
 
   const pdf = buildObservationReportPdf(observation);
@@ -48,7 +51,7 @@ export async function GET(
   return new Response(new Uint8Array(pdf), {
     headers: {
       "Content-Disposition": `attachment; filename="${pdfFileName(
-        observation.title
+        observation.title,
       )}"`,
       "Content-Type": "application/pdf",
     },

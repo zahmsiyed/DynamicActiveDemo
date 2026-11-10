@@ -1,13 +1,4 @@
-// These helpers keep file validation and Supabase Storage persistence out of
-// the route handler so the upload rules are easy to audit.
-
-import { randomUUID } from "crypto";
-
-import {
-  removeRecordingObject,
-  uploadRecordingObject,
-} from "@/lib/supabase-storage";
-
+// Pure media validation shared by routes and workers.
 // Keep the upload limit modest so route handlers do not load huge files into
 // memory before handing them to Supabase Storage.
 export const maxAudioUploadBytes = 25 * 1024 * 1024;
@@ -49,7 +40,7 @@ type AudioUploadValidationResult =
       mimeType: string;
     };
 
-type PersistedAudioUploadResult =
+export type PersistedAudioUploadResult =
   | {
       ok: false;
       error: string;
@@ -76,7 +67,7 @@ export function formatUploadSize(sizeBytes: number) {
 }
 
 // Keep stored filenames predictable and safe for private object paths.
-function sanitizeFileName(fileName: string) {
+export function sanitizeFileName(fileName: string) {
   return (
     fileName
       .trim()
@@ -106,7 +97,7 @@ function hasMp4FileTypeBox(bytes: Buffer) {
 // catch obvious non-audio files before we store them or send them to OpenAI.
 export function hasExpectedAudioContainerSignature(
   bytes: Buffer,
-  mimeType: string
+  mimeType: string,
 ) {
   if (mimeType === "audio/wav" || mimeType === "audio/x-wav") {
     return (
@@ -139,7 +130,7 @@ export function hasExpectedAudioContainerSignature(
 
 // Validate a browser File before reading or writing its bytes.
 export function validateAudioUploadFile(
-  file: File | null
+  file: File | null,
 ): AudioUploadValidationResult {
   if (!file) {
     return {
@@ -176,68 +167,8 @@ export function validateAudioUploadFile(
   };
 }
 
-function hasFileExtension(fileName: string) {
+export function hasFileExtension(fileName: string) {
   return /\.[a-z0-9]{1,8}$/i.test(fileName);
 }
 
 // Save the upload to Supabase Storage and return metadata for Prisma.
-export async function persistAudioUploadFile(
-  file: File,
-  observationId: string
-): Promise<PersistedAudioUploadResult> {
-  const validation = validateAudioUploadFile(file);
-
-  if (!validation.ok) {
-    return {
-      ok: false,
-      error: validation.error,
-    };
-  }
-
-  const safeOriginalName = sanitizeFileName(file.name);
-  const extension = validation.extension;
-  const storedFileName = `${Date.now()}-${randomUUID()}-${safeOriginalName}`;
-  const finalFileName = hasFileExtension(storedFileName)
-    ? storedFileName
-    : `${storedFileName}.${extension}`;
-  const storagePath = ["observations", observationId, finalFileName].join("/");
-  const bytes = Buffer.from(await file.arrayBuffer());
-
-  if (!hasExpectedAudioContainerSignature(bytes, validation.mimeType)) {
-    return {
-      ok: false,
-      error:
-        "The selected file does not look like a valid MP3, WAV, MP4, M4A, or WebM recording.",
-    };
-  }
-
-  try {
-    await uploadRecordingObject({
-      bytes,
-      contentType: validation.mimeType,
-      storagePath,
-    });
-  } catch (error) {
-    return {
-      ok: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Recording could not be stored in Supabase Storage.",
-    };
-  }
-
-  return {
-    ok: true,
-    error: "",
-    fileName: file.name || finalFileName,
-    mimeType: validation.mimeType,
-    sizeBytes: file.size,
-    storagePath,
-  };
-}
-
-// Remove a previously uploaded object when replacing an observation upload.
-export async function removeStoredAudioUpload(storagePath: string | null) {
-  await removeRecordingObject(storagePath);
-}

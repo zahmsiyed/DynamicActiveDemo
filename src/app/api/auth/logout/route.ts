@@ -1,16 +1,7 @@
-// Logging out is just deleting the session cookie from the browser.
-
+// Revoke the refresh session as well as clearing browser cookies.
 import { NextResponse } from "next/server";
-
-import { SESSION_COOKIE } from "@/lib/session";
-
+import { authClient } from "@/lib/supabase/server";
 export async function POST() {
-  const response = NextResponse.json({
-    ok: true,
-  });
-
-  // Deleting the cookie makes future protected route requests unauthenticated.
-  response.cookies.delete(SESSION_COOKIE);
-
-  return response;
+  const { error } = await (await authClient()).auth.signOut();
+  return NextResponse.json({ ok: !error }, { status: error ? 503 : 200 });
 }

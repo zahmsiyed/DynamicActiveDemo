@@ -1,5 +1,6 @@
 // This server component is protected by role and then loads school-level data.
 
+import { DashboardPagination } from "@/components/dashboard-pagination";
 import { DashboardShell } from "@/components/dashboard-shell";
 import {
   MetricGrid,
@@ -10,9 +11,14 @@ import {
 import { requireCurrentUser } from "@/lib/auth";
 import { getSchoolDashboardData } from "@/lib/dashboard-data";
 
-export default async function SchoolDashboardPage() {
+export default async function SchoolDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cursor?: string }>;
+}) {
   const user = await requireCurrentUser(["SCHOOL_ADMIN"]);
-  const dashboard = await getSchoolDashboardData(user);
+  const { cursor } = await searchParams;
+  const dashboard = await getSchoolDashboardData(user, cursor);
 
   return (
     <DashboardShell
@@ -22,6 +28,11 @@ export default async function SchoolDashboardPage() {
       title="Observation operations"
       description="Track upcoming evaluations, teacher coverage, recording/transcript progress, and reports that still need feedback or finalization."
     >
+      <DashboardPagination
+        path="/dashboard/school"
+        nextCursor={dashboard.nextCursor}
+        hasCursor={!!cursor}
+      />
       <MetricGrid metrics={dashboard.metrics} />
 
       <div className="grid gap-5 lg:grid-cols-[1.4fr_0.8fr]">

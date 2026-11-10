@@ -3,6 +3,7 @@
 
 import { Role, type Prisma } from "@prisma/client";
 
+import { observationScope } from "@/lib/access";
 import { getDb } from "@/lib/db";
 import { type AppRole } from "@/lib/session";
 
@@ -89,6 +90,8 @@ export async function getTeachersForSchoolAdmin(user: ObservationUser) {
     where: {
       role: Role.TEACHER,
       schoolId: user.schoolId,
+      districtId: user.districtId ?? "",
+      active: true,
     },
     select: {
       id: true,
@@ -111,27 +114,30 @@ export function canViewObservation(
     teacherId: string;
     schoolId: string;
     districtId: string;
-  }
+    status?: string;
+  },
 ) {
-  if (user.role === "DISTRICT_ADMIN") {
-    return observation.districtId === user.districtId;
-  }
-
-  if (user.role === "SCHOOL_ADMIN") {
-    return observation.schoolId === user.schoolId;
-  }
-
-  return observation.teacherId === user.id;
+  if (!user.districtId || user.districtId !== observation.districtId)
+    return false;
+  if (user.role === "DISTRICT_ADMIN") return true;
+  if (user.role === "SCHOOL_ADMIN")
+    return !!user.schoolId && user.schoolId === observation.schoolId;
+  return (
+    user.role === "TEACHER" &&
+    observation.teacherId === user.id &&
+    observation.status === "FINALIZED"
+  );
 }
 
 // Load one observation report only if the current user is allowed to see it.
 export async function getObservationReportForUser(
   observationId: string,
-  user: ObservationUser
+  user: ObservationUser,
 ) {
-  const observation = await getDb().observation.findUnique({
+  const observation = await getDb().observation.findFirst({
     where: {
       id: observationId,
+      ...observationScope(user),
     },
     include: observationReportInclude,
   });

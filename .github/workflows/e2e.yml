@@ -1,0 +1,54 @@
+# A dedicated hosted Supabase project replaces a local/container test stack.
+# Serialize runs so queue assertions cannot consume another CI run's messages.
+name: Platform tests
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: dynamic-active-hosted-tests
+  cancel-in-progress: false
+jobs:
+  platform-tests:
+    name: platform-tests
+    runs-on: ubuntu-latest
+    environment: testing
+    env:
+      E2E_DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
+      E2E_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+      E2E_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.E2E_SUPABASE_PUBLISHABLE_KEY }}
+      E2E_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.E2E_SUPABASE_SERVICE_ROLE_KEY }}
+      E2E_RECORDINGS_BUCKET: ${{ vars.E2E_RECORDINGS_BUCKET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Require isolated test credentials
+        run: |
+          test -n "$E2E_DATABASE_URL"
+          test -n "$E2E_SUPABASE_URL"
+          test -n "$E2E_SUPABASE_PUBLISHABLE_KEY"
+          test -n "$E2E_SUPABASE_SERVICE_ROLE_KEY"
+          test -n "$E2E_RECORDINGS_BUCKET"
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Apply committed migrations to test project
+        run: npm run db:deploy
+        env:
+          DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.E2E_DATABASE_URL }}
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:integration
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-test-results
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 3

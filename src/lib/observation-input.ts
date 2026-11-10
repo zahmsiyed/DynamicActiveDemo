@@ -47,7 +47,7 @@ export function readText(value: unknown) {
 // Status is optional in create/update requests, so the caller supplies fallback.
 export function parseObservationStatus(
   value: unknown,
-  fallback: ObservationStatus
+  fallback: ObservationStatus,
 ) {
   return editableObservationStatuses.has(value as ObservationStatus)
     ? (value as ObservationStatus)
@@ -61,7 +61,7 @@ export function parseScoreInputs(value: unknown) {
   }
 
   const validCategorySet = new Set<string>(
-    evaluationCategories.map((category) => category.toString())
+    evaluationCategories.map((category) => category.toString()),
   );
   const seen = new Set<EvaluationCategory>();
   const scores: ValidScoreInput[] = [];
@@ -112,10 +112,13 @@ export function parseScoreInputs(value: unknown) {
 // Read JSON safely so malformed requests get a normal response instead of an
 // uncaught exception.
 export async function readObservationBody(
-  request: Request
+  request: Request,
 ): Promise<ObservationRequestBody> {
   try {
-    return (await request.json()) as ObservationRequestBody;
+    const body = await request.json();
+    return body && typeof body === "object" && !Array.isArray(body)
+      ? (body as ObservationRequestBody)
+      : {};
   } catch {
     return {};
   }

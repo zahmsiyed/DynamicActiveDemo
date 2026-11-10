@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "ReportRevision" ADD COLUMN     "sourceCreatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+

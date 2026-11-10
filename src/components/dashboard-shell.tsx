@@ -43,9 +43,9 @@ export async function DashboardShell({
   const dashboardPath = roleDashboardPath(user.role);
   const notificationCenter = await getNotificationCenter(user.id);
   const hasNotificationActivity =
-    notificationCenter.notifications.length > 0 ||
-    notificationCenter.emailLogs.length > 0;
+    notificationCenter.notifications.length > 0;
   const navLinks = [
+    ...(user.role === "DISTRICT_ADMIN" ? [{ href: "/settings", label: "District settings", variant: "secondary" }] : []),
     ...(!hideDashboardLink
       ? [
           {
@@ -124,7 +124,7 @@ export async function DashboardShell({
               <div>
                 <h2 className="font-semibold text-brand-ink">Notifications</h2>
                 <p className="mt-1 text-sm text-brand-muted">
-                  Report activity and simulated email delivery for this account.
+                  Reviewed report activity for this account.
                 </p>
               </div>
 
@@ -188,33 +188,7 @@ export async function DashboardShell({
                 )}
               </div>
 
-              <div className="rounded-[1.25rem] border border-brand-line bg-white p-4">
-                <h3 className="text-sm font-semibold text-brand-ink">
-                  Simulated email log
-                </h3>
-                {notificationCenter.emailLogs.length ? (
-                  <div className="mt-3 space-y-3">
-                    {notificationCenter.emailLogs.map((emailLog) => (
-                      <div
-                        className="border-t border-brand-line pt-3 first:border-t-0 first:pt-0"
-                        key={emailLog.id}
-                      >
-                        <p className="text-sm font-semibold text-brand-ink">
-                          {emailLog.subject}
-                        </p>
-                        <p className="mt-1 text-xs text-brand-muted">
-                          {emailLog.email} | {emailLog.status} |{" "}
-                          {formatNotificationDate(emailLog.createdAt)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-3 text-sm text-brand-muted">
-                    No simulated emails have been logged for this account yet.
-                  </p>
-                )}
-              </div>
+
             </div>
           </section>
         ) : null}
